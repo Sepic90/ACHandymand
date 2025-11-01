@@ -73,33 +73,34 @@ function generateEmployeePage(pdf, year, startMonthIndex, dates, employeeName, l
     }
   }
   
-  yPosition += 10;
+  yPosition += 8;
   
   // Month pair subtitle
-  pdf.setFontSize(14);
+  pdf.setFontSize(12);
   pdf.setFont('helvetica', 'normal');
   const monthPairLabel = getMonthPairLabel(startMonthIndex);
   pdf.text(monthPairLabel, margin, yPosition);
   
-  yPosition += 10;
+  yPosition += 8;
   
   // Company information
-  pdf.setFontSize(10);
+  pdf.setFontSize(9);
   pdf.setFont('helvetica', 'normal');
   pdf.text('AC Handymand.dk ApS', margin, yPosition);
-  yPosition += 5;
+  yPosition += 4;
   pdf.text('Axel Juels Allé 72', margin, yPosition);
-  yPosition += 5;
+  yPosition += 4;
   pdf.text('2750 Ballerup', margin, yPosition);
-  yPosition += 5;
+  yPosition += 4;
   pdf.text('CVR 42397792', margin, yPosition);
   
-  yPosition += 8;
+  yPosition += 6;
   
   // Statement - normal
   pdf.setFont('helvetica', 'normal');
+  pdf.setFontSize(9);
   pdf.text('Oversigt over arbejdstimer, SH og overarbejde (OA).', margin, yPosition);
-  yPosition += 5;
+  yPosition += 4;
   
   // Statement - bold red
   pdf.setFont('helvetica', 'bold');
@@ -107,12 +108,12 @@ function generateEmployeePage(pdf, year, startMonthIndex, dates, employeeName, l
   pdf.text('Afleveres d. 19 i hver måned.', margin, yPosition);
   pdf.setTextColor(0, 0, 0);
   
-  yPosition += 10;
+  yPosition += 8;
   
   // Table
   drawTable(pdf, margin, yPosition, pageWidth - 2 * margin, dates);
   
-  // Signature line at bottom - centered with label
+  // Signature line at bottom - centered with label - moved closer to bottom for more signing space
   const signatureY = pageHeight - 25;
   const signatureWidth = pageWidth / 3;
   const signatureX = (pageWidth - signatureWidth) / 2;
@@ -129,7 +130,7 @@ function generateEmployeePage(pdf, year, startMonthIndex, dates, employeeName, l
   // Employee name below the line, centered
   const nameWidth = pdf.getTextWidth(employeeName);
   const nameX = signatureX + (signatureWidth - nameWidth) / 2;
-  pdf.text(employeeName, nameX, signatureY + 5);
+  pdf.text(employeeName, nameX, signatureY + 6);
 }
 
 /**
@@ -140,14 +141,14 @@ function drawTable(pdf, x, y, width, dates) {
   
   // Column definitions with exact headers
   const columns = [
-    { header: 'Dato', width: 15 },
-    { header: 'Ugedag', width: 18 },
-    { header: 'Fra kl. / Til kl.', width: 30 },
-    { header: 'Total timer', width: 20 },
-    { header: 'Total timer\nminus frokost', width: 25 },
-    { header: 'Kundens navn / Nume client\nBy / Oraș', width: 45 },
-    { header: 'Arb. timer', width: 20 },
-    { header: 'OA', width: 12 }
+    { header: 'Dato', width: 12 },
+    { header: 'Ugedag', width: 14 },
+    { header: 'Fra kl. / Til kl.', width: 32 },
+    { header: 'Total timer', width: 22 },
+    { header: 'Total timer\nminus frokost', width: 28 },
+    { header: 'Kundens navn / Nume client\nBy / Oras', width: 50 },
+    { header: 'Arb. timer', width: 22 },
+    { header: 'OA', width: 8 }
   ];
   
   // Calculate actual column widths to fit table width
@@ -156,7 +157,7 @@ function drawTable(pdf, x, y, width, dates) {
   columns.forEach(col => col.width *= scaleFactor);
   
   const rowHeight = 6;
-  const headerHeight = 12;
+  const headerHeight = 8;
   
   // Draw header
   let currentX = x;
@@ -167,15 +168,14 @@ function drawTable(pdf, x, y, width, dates) {
     // Draw header cell border
     pdf.rect(currentX, y, col.width, headerHeight);
     
-    // Draw header text (handle multi-line)
+    // Draw header text (handle multi-line) - left-aligned with minimal padding
     const lines = col.header.split('\n');
-    const lineHeight = 3.5;
-    const startLineY = y + (headerHeight - (lines.length * lineHeight)) / 2 + lineHeight;
+    const lineHeight = 3;
+    const startLineY = y + 3; // Start 3mm from top (minimal padding)
     
     lines.forEach((line, lineIndex) => {
-      const textWidth = pdf.getTextWidth(line);
-      const textX = currentX + (col.width - textWidth) / 2;
-      pdf.text(line, textX, startLineY + (lineIndex * lineHeight));
+      // Left-align with small padding
+      pdf.text(line, currentX + 1, startLineY + (lineIndex * lineHeight));
     });
     
     currentX += col.width;
@@ -212,9 +212,8 @@ function drawTable(pdf, x, y, width, dates) {
       
       if (cellText) {
         pdf.setTextColor(...textColor);
-        const textWidth = pdf.getTextWidth(cellText);
-        const textX = currentX + (col.width - textWidth) / 2;
-        pdf.text(cellText, textX, y + rowHeight / 2 + 1.5);
+        // Left-align with small padding
+        pdf.text(cellText, currentX + 1, y + rowHeight / 2 + 1.5);
         pdf.setTextColor(0, 0, 0);
       }
       
