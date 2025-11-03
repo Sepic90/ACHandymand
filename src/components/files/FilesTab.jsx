@@ -143,7 +143,8 @@ function FilesTab({ project, currentUser }) {
   const billederFiles = getFilteredFilesByCategory('billeder');
   const dokumenterFiles = getFilteredFilesByCategory('dokumenter');
 
-  const categoryFiles = previewCategory ? getFilteredFilesByCategory(previewCategory) : [];
+  const categoryFiles = previewCategory ? 
+    getFilteredFilesByCategory(previewCategory) : [];
 
   return (
     <div className="files-tab">
@@ -185,7 +186,6 @@ function FilesTab({ project, currentUser }) {
           onPreview={handlePreview}
           onDelete={handleDelete}
           onDownload={handleDownload}
-          onUpload={() => {}}
         />
         <FileCategoryColumn
           category="billeder"
@@ -193,7 +193,6 @@ function FilesTab({ project, currentUser }) {
           onPreview={handlePreview}
           onDelete={handleDelete}
           onDownload={handleDownload}
-          onUpload={() => {}}
         />
         <FileCategoryColumn
           category="dokumenter"
@@ -201,7 +200,6 @@ function FilesTab({ project, currentUser }) {
           onPreview={handlePreview}
           onDelete={handleDelete}
           onDownload={handleDownload}
-          onUpload={() => {}}
         />
       </div>
 

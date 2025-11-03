@@ -1,20 +1,19 @@
 import React, { useState, useRef } from 'react';
 import { useNotification } from '../../utils/notificationUtils.jsx';
-import {
-  validateFileSize,
-  validateFileType,
-  shouldCompressFile,
-  compressImage,
-  generateThumbnail,
-  getCategoryLabel
-} from '../../utils/fileUtils';
 import { uploadFile } from '../../utils/storageUtils';
+import imageCompression from 'browser-image-compression';
 
-function FileUploadArea({ sagsnummer, projectId, projectName, uploadedBy, uploadedByUID, onUploadComplete, preselectedCategory }) {
+function FileUploadArea({ 
+  sagsnummer, 
+  projectId, 
+  projectName, 
+  uploadedBy, 
+  uploadedByUID, 
+  onUploadComplete 
+}) {
   const [uploading, setUploading] = useState(false);
-  const [compressionProgress, setCompressionProgress] = useState(0);
   const [uploadProgress, setUploadProgress] = useState(0);
-  const [selectedCategory, setSelectedCategory] = useState(preselectedCategory || '');
+  const [compressionProgress, setCompressionProgress] = useState(0);
   const [showCategoryModal, setShowCategoryModal] = useState(false);
   const [pendingFile, setPendingFile] = useState(null);
   const fileInputRef = useRef(null);
@@ -22,17 +21,19 @@ function FileUploadArea({ sagsnummer, projectId, projectName, uploadedBy, upload
   const { showSuccess, showError } = useNotification();
 
   const handleFileSelect = (e) => {
-    const file = e.target.files[0];
+    const file = e.target.files?.[0];
     if (file) {
-      processFile(file);
+      setPendingFile(file);
+      setShowCategoryModal(true);
     }
   };
 
   const handleDrop = (e) => {
     e.preventDefault();
-    const file = e.dataTransfer.files[0];
+    const file = e.dataTransfer.files?.[0];
     if (file) {
-      processFile(file);
+      setPendingFile(file);
+      setShowCategoryModal(true);
     }
   };
 
@@ -40,67 +41,88 @@ function FileUploadArea({ sagsnummer, projectId, projectName, uploadedBy, upload
     e.preventDefault();
   };
 
-  const processFile = (file) => {
-    // Validate file size
-    const sizeValidation = validateFileSize(file);
-    if (!sizeValidation.valid) {
-      showError(sizeValidation.error);
-      return;
-    }
-
-    setPendingFile(file);
-    setShowCategoryModal(true);
-  };
-
   const handleCategorySelect = async (category) => {
-    if (!pendingFile) return;
-
-    // Validate file type for category
-    const typeValidation = validateFileType(pendingFile, category);
-    if (!typeValidation.valid) {
-      showError(typeValidation.error);
-      setShowCategoryModal(false);
+    setShowCategoryModal(false);
+    if (pendingFile) {
+      await handleUpload(pendingFile, category);
       setPendingFile(null);
+    }
+  };
+
+  const compressImageFile = async (file, onProgress) => {
+    try {
+      // Compression options
+      const options = {
+        maxSizeMB: 1,
+        maxWidthOrHeight: 1920,
+        useWebWorker: true,
+        onProgress: onProgress
+      };
+
+      // Compress the image
+      const compressedFile = await imageCompression(file, options);
+
+      // Create thumbnail
+      const thumbnailOptions = {
+        maxSizeMB: 0.1,
+        maxWidthOrHeight: 200,
+        useWebWorker: true
+      };
+      const thumbnailFile = await imageCompression(file, thumbnailOptions);
+
+      return {
+        compressed: compressedFile,
+        thumbnail: thumbnailFile
+      };
+    } catch (error) {
+      console.error('Image compression error:', error);
+      return {
+        compressed: file,
+        thumbnail: null
+      };
+    }
+  };
+
+  const handleUpload = async (file, category) => {
+    // Validate file size (10MB max)
+    const maxSize = 10 * 1024 * 1024;
+    if (file.size > maxSize) {
+      showError('Filen er for stor. Maksimum 10MB tilladt.');
       return;
     }
 
-    setSelectedCategory(category);
-    setShowCategoryModal(false);
-    
-    await uploadFileWithCompression(pendingFile, category);
-    setPendingFile(null);
-  };
-
-  const uploadFileWithCompression = async (file, category) => {
     setUploading(true);
-    setCompressionProgress(0);
     setUploadProgress(0);
+    setCompressionProgress(0);
 
     try {
       let fileToUpload = file;
-      let thumbnail = null;
       let originalSize = file.size;
       let compressedSize = file.size;
       let isCompressed = false;
+      let thumbnail = null;
 
-      // Compress if image
-      if (shouldCompressFile(file)) {
-        const compressionResult = await compressImage(file, (progress) => {
-          setCompressionProgress(Math.round(progress));
+      // Compress images
+      if (file.type.startsWith('image/')) {
+        const compressionResult = await compressImageFile(file, (progress) => {
+          setCompressionProgress(progress);
         });
 
-        if (compressionResult.success) {
-          fileToUpload = compressionResult.file;
-          compressedSize = compressionResult.compressedSize;
+        if (compressionResult.compressed) {
+          fileToUpload = compressionResult.compressed;
+          compressedSize = compressionResult.compressed.size;
           isCompressed = true;
-          
-          // Generate thumbnail
-          thumbnail = await generateThumbnail(fileToUpload);
         }
+
+        if (compressionResult.thumbnail) {
+          thumbnail = compressionResult.thumbnail;
+        }
+
+        setCompressionProgress(100);
       }
 
       // Upload to Firebase
-      const uploadResult = await uploadFile({
+      const result = await uploadFile({
         file: fileToUpload,
         thumbnail,
         sagsnummer,
@@ -117,16 +139,14 @@ function FileUploadArea({ sagsnummer, projectId, projectName, uploadedBy, upload
         }
       });
 
-      if (uploadResult.success) {
-        showSuccess('Fil uploaded successfully');
+      if (result.success) {
+        showSuccess('Fil uploaded!');
+        onUploadComplete(result.fileData);
         if (fileInputRef.current) {
           fileInputRef.current.value = '';
         }
-        if (onUploadComplete) {
-          onUploadComplete(uploadResult.metadata);
-        }
       } else {
-        showError('Upload fejlede - prøv igen');
+        showError('Upload fejlede');
       }
     } catch (error) {
       console.error('Upload error:', error);
@@ -140,16 +160,15 @@ function FileUploadArea({ sagsnummer, projectId, projectName, uploadedBy, upload
 
   return (
     <>
-      <div className="file-upload-area">
+      <div className="file-upload-area-compact">
         <div 
-          className="upload-dropzone"
+          className="upload-dropzone-compact"
           onDrop={handleDrop}
           onDragOver={handleDragOver}
           onClick={() => fileInputRef.current?.click()}
         >
-          <div className="upload-icon">📁</div>
-          <p className="upload-text">Drag & drop eller klik for at vælge fil</p>
-          <p className="upload-subtext">Maks 10MB per fil</p>
+          <span className="upload-icon-compact">📁</span>
+          <span className="upload-text-compact">Drag & drop eller klik for at uploade fil</span>
         </div>
 
         <input
@@ -160,13 +179,10 @@ function FileUploadArea({ sagsnummer, projectId, projectName, uploadedBy, upload
         />
 
         {uploading && (
-          <div className="upload-progress-container">
+          <div className="upload-progress-compact">
             {compressionProgress > 0 && compressionProgress < 100 && (
               <>
-                <div className="loading-text">
-                  <span className="loading-spinner-dark"></span>
-                  Komprimerer billede... {compressionProgress}%
-                </div>
+                <span className="progress-text-compact">Komprimerer... {compressionProgress}%</span>
                 <div className="progress-bar-container">
                   <div 
                     className="progress-bar" 
@@ -177,10 +193,7 @@ function FileUploadArea({ sagsnummer, projectId, projectName, uploadedBy, upload
             )}
             {uploadProgress > 0 && (
               <>
-                <div className="loading-text">
-                  <span className="loading-spinner-dark"></span>
-                  Uploader til Firebase... {uploadProgress}%
-                </div>
+                <span className="progress-text-compact">Uploader... {uploadProgress}%</span>
                 <div className="progress-bar-container">
                   <div 
                     className="progress-bar" 

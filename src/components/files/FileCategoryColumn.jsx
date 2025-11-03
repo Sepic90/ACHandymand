@@ -7,8 +7,7 @@ function FileCategoryColumn({
   files, 
   onPreview, 
   onDelete, 
-  onDownload,
-  onUpload 
+  onDownload
 }) {
   const getCategoryLabel = () => {
     const labels = {
@@ -38,7 +37,7 @@ function FileCategoryColumn({
 
       <div className="category-content">
         {files.length === 0 ? (
-          <EmptyState category={category} onUpload={() => onUpload(category)} />
+          <EmptyState category={category} />
         ) : (
           <div className="file-list">
             {files.map((file) => (

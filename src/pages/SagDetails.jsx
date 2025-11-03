@@ -14,7 +14,6 @@ import {
 import { formatCurrency, formatDate, formatHours, createMapsUrl, formatPhone } from '../utils/formatUtils';
 import FilesTab from '../components/files/FilesTab';
 
-
 function SagDetails() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -26,6 +25,7 @@ function SagDetails() {
   const [timeEntryModalOpen, setTimeEntryModalOpen] = useState(false);
   const [editingTimeEntry, setEditingTimeEntry] = useState(null);
   const [defaultRate, setDefaultRate] = useState(450);
+  const [activeTab, setActiveTab] = useState('overblik');
 
   useEffect(() => {
     loadProject();
@@ -103,13 +103,11 @@ function SagDetails() {
   const handleSaveTimeEntry = async (formData) => {
     try {
       if (editingTimeEntry) {
-        // Update existing time entry
         await updateDoc(doc(db, 'timeEntries', editingTimeEntry.id), {
           ...formData,
           updatedAt: new Date().toISOString()
         });
       } else {
-        // Create new time entry
         await addDoc(collection(db, 'timeEntries'), {
           ...formData,
           projectId: id,
@@ -158,173 +156,323 @@ function SagDetails() {
         <p>Sagsnr. {project.projectNumber}</p>
       </div>
 
-      {/* Project Information */}
-      <div className="content-card">
-        <div className="card-header">
-          <h2>Sagsinformation</h2>
-          <button className="btn-secondary" onClick={handleEditProject}>
-            Redigér Sag
-          </button>
-        </div>
+      {/* Tab Navigation */}
+      <div className="sag-tabs">
+        <button 
+          className={`sag-tab ${activeTab === 'overblik' ? 'active' : ''}`}
+          onClick={() => setActiveTab('overblik')}
+        >
+          Overblik
+        </button>
+        <button 
+          className={`sag-tab ${activeTab === 'timeregistrering' ? 'active' : ''}`}
+          onClick={() => setActiveTab('timeregistrering')}
+        >
+          Timeregistrering
+        </button>
+        <button 
+          className={`sag-tab ${activeTab === 'filer' ? 'active' : ''}`}
+          onClick={() => setActiveTab('filer')}
+        >
+          Filer
+        </button>
+      </div>
 
-        <div className="project-info-grid">
-          <div className="info-item">
-            <label>Status</label>
-            <div><ProjectStatusBadge status={project.status} /></div>
-          </div>
+      {/* Tab Content */}
+      <div className="sag-tab-content">
+        {activeTab === 'overblik' && (
+          <div className="overblik-tab">
+            <div className="sag-grid">
+              {/* Project Information Card */}
+              <div className="sag-card">
+                <div className="card-header">
+                  <h2>Sagsoplysninger</h2>
+                  <button className="btn-secondary btn-small" onClick={handleEditProject}>
+                    Redigér sag
+                  </button>
+                </div>
+                <div className="card-body">
+                  <div className="info-grid">
+                    <div className="info-item">
+                      <span className="info-label">Status:</span>
+                      <ProjectStatusBadge status={project.status} />
+                    </div>
+                    <div className="info-item">
+                      <span className="info-label">Type:</span>
+                      <span className="info-value">{getTypeLabel(project.type)}</span>
+                    </div>
+                    {project.type === 'fixed-price' && (
+                      <div className="info-item">
+                        <span className="info-label">Fast Pris:</span>
+                        <span className="info-value">{formatCurrency(project.fixedPrice)}</span>
+                      </div>
+                    )}
+                    {project.hourlyRate && (
+                      <div className="info-item">
+                        <span className="info-label">Timepris:</span>
+                        <span className="info-value">{formatCurrency(project.hourlyRate)}/time</span>
+                      </div>
+                    )}
+                    {project.estimatedHours && (
+                      <div className="info-item">
+                        <span className="info-label">Estimeret timer:</span>
+                        <span className="info-value">{formatHours(project.estimatedHours)}</span>
+                      </div>
+                    )}
+                    {project.startDate && (
+                      <div className="info-item">
+                        <span className="info-label">Startdato:</span>
+                        <span className="info-value">{formatDate(project.startDate)}</span>
+                      </div>
+                    )}
+                    {project.endDate && (
+                      <div className="info-item">
+                        <span className="info-label">Slutdato:</span>
+                        <span className="info-value">{formatDate(project.endDate)}</span>
+                      </div>
+                    )}
+                  </div>
+                  {project.description && (
+                    <div className="info-description">
+                      <span className="info-label">Beskrivelse:</span>
+                      <p>{project.description}</p>
+                    </div>
+                  )}
+                </div>
+              </div>
 
-          <div className="info-item">
-            <label>Type</label>
-            <div>{getTypeLabel(project.type)}</div>
-          </div>
+              {/* Customer Information Card */}
+              <div className="sag-card">
+                <div className="card-header">
+                  <h2>Kundeoplysninger</h2>
+                </div>
+                <div className="card-body">
+                  <div className="info-grid">
+                    <div className="info-item">
+                      <span className="info-label">Navn:</span>
+                      <span className="info-value">{project.customerName || '-'}</span>
+                    </div>
+                    <div className="info-item">
+                      <span className="info-label">Telefon:</span>
+                      {project.customerPhone ? (
+                        <a href={`tel:${project.customerPhone}`} className="info-link">
+                          {formatPhone(project.customerPhone)}
+                        </a>
+                      ) : (
+                        <span className="info-value">-</span>
+                      )}
+                    </div>
+                    <div className="info-item">
+                      <span className="info-label">Email:</span>
+                      {project.customerEmail ? (
+                        <a href={`mailto:${project.customerEmail}`} className="info-link">
+                          {project.customerEmail}
+                        </a>
+                      ) : (
+                        <span className="info-value">-</span>
+                      )}
+                    </div>
+                    <div className="info-item full-width">
+                      <span className="info-label">Adresse:</span>
+                      {project.address ? (
+                        <a 
+                          href={createMapsUrl(project.address)} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="info-link"
+                        >
+                          {project.address} 📍
+                        </a>
+                      ) : (
+                        <span className="info-value">-</span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
 
-          <div className="info-item">
-            <label>Kunde</label>
-            <div>{project.customerName || '-'}</div>
-          </div>
+              {/* Time Statistics Card */}
+              <div className="sag-card">
+                <div className="card-header">
+                  <h2>Timestatistik</h2>
+                </div>
+                <div className="card-body">
+                  <div className="stats-grid">
+                    <div className="stat-item">
+                      <div className="stat-value">{formatHours(totalHours)}</div>
+                      <div className="stat-label">Totale timer</div>
+                    </div>
+                    <div className="stat-item">
+                      <div className="stat-value">{formatHours(billableHours)}</div>
+                      <div className="stat-label">Fakturerbare timer</div>
+                    </div>
+                    <div className="stat-item">
+                      <div className="stat-value">{formatCurrency(totalValue)}</div>
+                      <div className="stat-label">Total værdi</div>
+                    </div>
+                  </div>
+                  {project.type === 'fixed-price' && project.fixedPrice && (
+                    <div className="progress-section">
+                      <div className="progress-label">
+                        <span>Fremskridt</span>
+                        <span>{Math.round((totalValue / project.fixedPrice) * 100)}%</span>
+                      </div>
+                      <div className="progress-bar-container">
+                        <div 
+                          className="progress-bar" 
+                          style={{ 
+                            width: `${Math.min((totalValue / project.fixedPrice) * 100, 100)}%`,
+                            backgroundColor: totalValue > project.fixedPrice ? '#e74c3c' : '#27ae60'
+                          }}
+                        ></div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
 
-          <div className="info-item">
-            <label>Telefon</label>
-            <div>{project.customerPhone ? formatPhone(project.customerPhone) : '-'}</div>
-          </div>
-
-          <div className="info-item">
-            <label>Email</label>
-            <div>{project.customerEmail || '-'}</div>
-          </div>
-
-          <div className="info-item">
-            <label>Adresse</label>
-            <div>
-              {project.address ? (
-                <a 
-                  href={createMapsUrl(project.address)} 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  className="maps-link"
-                >
-                  {project.address} 🗺️
-                </a>
-              ) : '-'}
+              {/* Recent Activity Card */}
+              {timeEntries.length > 0 && (
+                <div className="sag-card full-width">
+                  <div className="card-header">
+                    <h2>Seneste timeregistreringer</h2>
+                  </div>
+                  <div className="card-body">
+                    <table className="time-entries-table">
+                      <thead>
+                        <tr>
+                          <th>Dato</th>
+                          <th>Medarbejder</th>
+                          <th>Timer</th>
+                          <th>Beskrivelse</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {timeEntries.slice(0, 5).map((entry) => (
+                          <tr key={entry.id}>
+                            <td>{formatDate(entry.date)}</td>
+                            <td>{entry.employeeName}</td>
+                            <td>{formatHours(entry.hours)}</td>
+                            <td>{entry.description || '-'}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
+        )}
 
-          <div className="info-item">
-            <label>Tildelt til</label>
-            <div>{project.assignedTo || '-'}</div>
-          </div>
+        {activeTab === 'timeregistrering' && (
+          <div className="timeregistrering-tab">
+            <div className="sag-card">
+              <div className="card-header">
+                <h2>Timeregistreringer</h2>
+                <button className="btn-primary" onClick={handleAddTimeEntry}>
+                  + Tilføj timer
+                </button>
+              </div>
+              <div className="card-body">
+                {timeEntries.length === 0 ? (
+                  <div className="empty-state">
+                    <p>Ingen timeregistreringer endnu</p>
+                    <button className="btn-primary" onClick={handleAddTimeEntry}>
+                      Tilføj første timeregistrering
+                    </button>
+                  </div>
+                ) : (
+                  <>
+                    <div className="time-summary">
+                      <div className="summary-item">
+                        <span className="summary-label">Totale timer:</span>
+                        <span className="summary-value">{formatHours(totalHours)}</span>
+                      </div>
+                      <div className="summary-item">
+                        <span className="summary-label">Fakturerbare timer:</span>
+                        <span className="summary-value">{formatHours(billableHours)}</span>
+                      </div>
+                      <div className="summary-item">
+                        <span className="summary-label">Total værdi:</span>
+                        <span className="summary-value">{formatCurrency(totalValue)}</span>
+                      </div>
+                    </div>
 
-          <div className="info-item">
-            <label>Oprettet</label>
-            <div>{formatDate(project.createdAt)}</div>
+                    <table className="time-entries-table">
+                      <thead>
+                        <tr>
+                          <th>Dato</th>
+                          <th>Medarbejder</th>
+                          <th>Timer</th>
+                          <th>Timepris</th>
+                          <th>Fakturerbar</th>
+                          <th>Værdi</th>
+                          <th>Beskrivelse</th>
+                          <th>Handlinger</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {timeEntries.map((entry) => (
+                          <tr key={entry.id}>
+                            <td>{formatDate(entry.date)}</td>
+                            <td>{entry.employeeName}</td>
+                            <td>{formatHours(entry.hours)}</td>
+                            <td>{formatCurrency(entry.hourlyRate)}</td>
+                            <td>{entry.billable ? '✓' : '✗'}</td>
+                            <td>{entry.billable ? formatCurrency(entry.hours * entry.hourlyRate) : '-'}</td>
+                            <td>{entry.description || '-'}</td>
+                            <td>
+                              <button 
+                                className="btn-icon" 
+                                onClick={() => handleEditTimeEntry(entry)}
+                                title="Redigér"
+                              >
+                                ✏️
+                              </button>
+                              <button 
+                                className="btn-icon" 
+                                onClick={() => handleDeleteTimeEntry(entry)}
+                                title="Slet"
+                              >
+                                🗑️
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </>
+                )}
+              </div>
+            </div>
           </div>
-        </div>
-      </div>
-	  
-      {/* Files Tab */}
-      <div className="content-card">
-        <div className="card-header">
-          <h2>Filer</h2>
-        </div>
-        <FilesTab project={project} currentUser="Admin" />
-      </div>
-      {/* Time Entries Summary */}
-      <div className="content-card">
-        <div className="card-header">
-          <h2>Timeregistrering</h2>
-          <button className="btn-primary" onClick={handleAddTimeEntry}>
-            + Tilføj Timer
-          </button>
-        </div>
+        )}
 
-        <div className="summary-grid">
-          <div className="summary-item">
-            <label>Total Timer</label>
-            <div className="summary-value">{formatHours(totalHours)}</div>
-          </div>
-
-          <div className="summary-item">
-            <label>Fakturerbare Timer</label>
-            <div className="summary-value">{formatHours(billableHours)}</div>
-          </div>
-
-          <div className="summary-item">
-            <label>Total Værdi</label>
-            <div className="summary-value">{formatCurrency(totalValue)}</div>
-          </div>
-        </div>
-
-        {/* Time Entries Table */}
-        {timeEntries.length === 0 ? (
-          <div className="empty-state">
-            <p>Ingen timer registreret endnu. Tilføj den første timeregistrering for at komme i gang.</p>
-          </div>
-        ) : (
-          <div className="table-container">
-            <table className="time-entries-table">
-              <thead>
-                <tr>
-                  <th>Dato</th>
-                  <th>Timer</th>
-                  <th>Aktivitet</th>
-                  <th>Fakturerbar</th>
-                  <th>Timepris</th>
-                  <th>Total</th>
-                  <th>Handlinger</th>
-                </tr>
-              </thead>
-              <tbody>
-                {timeEntries.map((entry) => (
-                  <tr key={entry.id}>
-                    <td>{formatDate(entry.date)}</td>
-                    <td>{formatHours(entry.duration)}</td>
-                    <td className="activity-cell">{entry.activity}</td>
-                    <td>
-                      <span className={`billable-badge ${entry.billable ? 'yes' : 'no'}`}>
-                        {entry.billable ? 'Ja' : 'Nej'}
-                      </span>
-                    </td>
-                    <td>{formatCurrency(entry.rate)}</td>
-                    <td><strong>{formatCurrency(entry.duration * entry.rate)}</strong></td>
-                    <td className="actions-cell">
-                      <button
-                        className="btn-icon btn-edit"
-                        onClick={() => handleEditTimeEntry(entry)}
-                        title="Redigér"
-                      >
-                        ✏️
-                      </button>
-                      <button
-                        className="btn-icon btn-delete"
-                        onClick={() => handleDeleteTimeEntry(entry)}
-                        title="Slet"
-                      >
-                        🗑️
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+        {activeTab === 'filer' && (
+          <FilesTab 
+            project={project} 
+            currentUser="Admin"
+          />
         )}
       </div>
 
-      {/* Modals */}
-      <ProjectModal
-        isOpen={editModalOpen}
-        onClose={() => setEditModalOpen(false)}
-        onSave={handleSaveProject}
-        project={project}
-      />
+      {editModalOpen && (
+        <ProjectModal
+          project={project}
+          onClose={() => setEditModalOpen(false)}
+          onSave={handleSaveProject}
+        />
+      )}
 
-      <TimeEntryModal
-        isOpen={timeEntryModalOpen}
-        onClose={() => setTimeEntryModalOpen(false)}
-        onSave={handleSaveTimeEntry}
-        timeEntry={editingTimeEntry}
-        defaultRate={defaultRate}
-      />
+      {timeEntryModalOpen && (
+        <TimeEntryModal
+          timeEntry={editingTimeEntry}
+          defaultRate={defaultRate}
+          onClose={() => setTimeEntryModalOpen(false)}
+          onSave={handleSaveTimeEntry}
+        />
+      )}
     </div>
   );
 }

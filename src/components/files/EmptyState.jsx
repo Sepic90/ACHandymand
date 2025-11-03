@@ -1,6 +1,6 @@
 import React from 'react';
 
-function EmptyState({ category, onUpload }) {
+function EmptyState({ category }) {
   const getCategoryLabel = () => {
     const labels = {
       bilag: 'bilag',
@@ -23,12 +23,6 @@ function EmptyState({ category, onUpload }) {
     <div className="empty-state-file">
       <div className="empty-icon">{getIcon()}</div>
       <p>Ingen {getCategoryLabel()} uploaded endnu</p>
-      <button 
-        className="btn-secondary btn-small"
-        onClick={onUpload}
-      >
-        Upload {getCategoryLabel()}
-      </button>
     </div>
   );
 }
