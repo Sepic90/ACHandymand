@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc } from 'firebase/firestore';
+import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, getDoc, setDoc } from 'firebase/firestore';
 import { db } from '../services/firebase';
 import EmployeeModal from '../components/EmployeeModal';
 
@@ -8,10 +8,27 @@ function Indstillinger() {
   const [loading, setLoading] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
   const [editingEmployee, setEditingEmployee] = useState(null);
+  const [defaultRate, setDefaultRate] = useState(450);
+  const [editingRate, setEditingRate] = useState(false);
+  const [tempRate, setTempRate] = useState(450);
 
   useEffect(() => {
+    loadSettings();
     loadEmployees();
   }, []);
+
+  const loadSettings = async () => {
+    try {
+      const settingsDoc = await getDoc(doc(db, 'settings', 'hourlyRates'));
+      if (settingsDoc.exists()) {
+        const rate = settingsDoc.data().defaultRate || 450;
+        setDefaultRate(rate);
+        setTempRate(rate);
+      }
+    } catch (error) {
+      console.error('Error loading settings:', error);
+    }
+  };
 
   const loadEmployees = async () => {
     setLoading(true);
@@ -22,15 +39,35 @@ function Indstillinger() {
         employeeList.push({ id: doc.id, ...doc.data() });
       });
       
-      // Sort by name
       employeeList.sort((a, b) => a.name.localeCompare(b.name));
-      
       setEmployees(employeeList);
     } catch (error) {
       console.error('Error loading employees:', error);
       alert('Der opstod en fejl ved indlæsning af medarbejdere.');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const saveDefaultRate = async () => {
+    try {
+      const rateValue = parseFloat(tempRate);
+      if (isNaN(rateValue) || rateValue <= 0) {
+        alert('Indtast venligst en gyldig timepris.');
+        return;
+      }
+
+      await setDoc(doc(db, 'settings', 'hourlyRates'), {
+        defaultRate: rateValue,
+        updatedAt: new Date().toISOString()
+      });
+      
+      setDefaultRate(rateValue);
+      setEditingRate(false);
+      alert('Timepris gemt!');
+    } catch (error) {
+      console.error('Error saving default rate:', error);
+      alert('Der opstod en fejl ved gemning af timepris.');
     }
   };
 
@@ -56,15 +93,16 @@ function Indstillinger() {
     }
   };
 
-  const handleSaveEmployee = async (name) => {
+  const handleSaveEmployee = async (employeeData) => {
     try {
       if (editingEmployee) {
-        // Update existing employee
-        await updateDoc(doc(db, 'employees', editingEmployee.id), { name });
+        await updateDoc(doc(db, 'employees', editingEmployee.id), {
+          ...employeeData,
+          updatedAt: new Date().toISOString()
+        });
       } else {
-        // Add new employee
         await addDoc(collection(db, 'employees'), { 
-          name,
+          ...employeeData,
           createdAt: new Date().toISOString()
         });
       }
@@ -77,61 +115,158 @@ function Indstillinger() {
     }
   };
 
+  const getEmployeeRate = (employee) => {
+    if (employee.useCustomRate && employee.customRate) {
+      return employee.customRate;
+    }
+    return defaultRate;
+  };
+
   return (
     <div>
       <div className="page-header">
         <h1>Indstillinger</h1>
-        <p>Administrér medarbejdere og systemindstillinger</p>
+        <p>Administrér medarbejdere og priser</p>
       </div>
 
-      <div className="content-card">
-        <div className="settings-section">
-          <h2>Medarbejdere</h2>
-          
-          {loading ? (
-            <p>Indlæser medarbejdere...</p>
-          ) : employees.length === 0 ? (
-            <div className="empty-state">
-              <p>Ingen medarbejdere tilføjet endnu.</p>
-              <p>Klik på knappen nedenfor for at tilføje din første medarbejder.</p>
+      {/* Standard Timepris */}
+      <div className="content-card" style={{ marginBottom: '20px' }}>
+        <h2 style={{ marginBottom: '20px', fontSize: '20px', color: '#2c3e50' }}>Standard Timepris</h2>
+        
+        {editingRate ? (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <input
+                type="number"
+                value={tempRate}
+                onChange={(e) => setTempRate(e.target.value)}
+                min="0"
+                step="50"
+                style={{
+                  padding: '10px',
+                  fontSize: '18px',
+                  width: '150px',
+                  border: '1px solid #ddd',
+                  borderRadius: '5px'
+                }}
+                autoFocus
+              />
+              <span style={{ color: '#7f8c8d' }}>kr/time</span>
             </div>
-          ) : (
-            <div className="employee-list">
-              {employees.map(employee => (
-                <div key={employee.id} className="employee-item">
-                  <span className="employee-name">{employee.name}</span>
-                  <div className="employee-actions">
+            <div style={{ display: 'flex', gap: '10px' }}>
+              <button 
+                className="btn-secondary"
+                onClick={() => {
+                  setTempRate(defaultRate);
+                  setEditingRate(false);
+                }}
+              >
+                Annuller
+              </button>
+              <button 
+                className="btn-primary"
+                onClick={saveDefaultRate}
+              >
+                Gem
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div>
+              <div style={{ fontSize: '32px', fontWeight: 'bold', color: '#27ae60', marginBottom: '5px' }}>
+                {defaultRate} kr
+              </div>
+              <div style={{ fontSize: '14px', color: '#7f8c8d' }}>
+                Standard pris der bruges for alle medarbejdere
+              </div>
+            </div>
+            <button 
+              className="btn-secondary"
+              onClick={() => setEditingRate(true)}
+            >
+              Redigér
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* Medarbejdere */}
+      <div className="content-card">
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+          <h2 style={{ margin: 0, fontSize: '20px', color: '#2c3e50' }}>Medarbejdere</h2>
+          <button className="btn-primary" onClick={handleAddEmployee}>
+            + Tilføj Medarbejder
+          </button>
+        </div>
+
+        {loading ? (
+          <p>Indlæser medarbejdere...</p>
+        ) : employees.length === 0 ? (
+          <div style={{ textAlign: 'center', padding: '40px', color: '#7f8c8d' }}>
+            <p>Ingen medarbejdere tilføjet endnu.</p>
+          </div>
+        ) : (
+          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <thead>
+              <tr style={{ borderBottom: '2px solid #ecf0f1' }}>
+                <th style={{ textAlign: 'left', padding: '12px', color: '#2c3e50', fontWeight: '600' }}>Navn</th>
+                <th style={{ textAlign: 'left', padding: '12px', color: '#2c3e50', fontWeight: '600' }}>Timepris</th>
+                <th style={{ textAlign: 'right', padding: '12px', color: '#2c3e50', fontWeight: '600' }}>Handlinger</th>
+              </tr>
+            </thead>
+            <tbody>
+              {employees.map((employee) => (
+                <tr key={employee.id} style={{ borderBottom: '1px solid #ecf0f1' }}>
+                  <td style={{ padding: '15px' }}>
+                    <strong style={{ fontSize: '15px', color: '#2c3e50' }}>{employee.name}</strong>
+                  </td>
+                  <td style={{ padding: '15px' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                      <span style={{ fontWeight: '600', color: '#2c3e50' }}>
+                        {getEmployeeRate(employee)} kr/time
+                      </span>
+                      <span style={{
+                        fontSize: '11px',
+                        padding: '2px 8px',
+                        borderRadius: '10px',
+                        display: 'inline-block',
+                        width: 'fit-content',
+                        backgroundColor: employee.useCustomRate ? '#e3f2fd' : '#e8f5e9',
+                        color: employee.useCustomRate ? '#3498db' : '#27ae60'
+                      }}>
+                        {employee.useCustomRate ? 'Tilpasset' : 'Standard'}
+                      </span>
+                    </div>
+                  </td>
+                  <td style={{ padding: '15px', textAlign: 'right' }}>
                     <button
-                      className="btn-edit"
+                      className="btn-action btn-edit"
                       onClick={() => handleEditEmployee(employee)}
                     >
                       Redigér
                     </button>
                     <button
-                      className="btn-delete"
+                      className="btn-action btn-delete"
                       onClick={() => handleDeleteEmployee(employee)}
                     >
                       Slet
                     </button>
-                  </div>
-                </div>
+                  </td>
+                </tr>
               ))}
-            </div>
-          )}
-          
-          <button className="btn-add" onClick={handleAddEmployee}>
-            + Tilføj medarbejder
-          </button>
-        </div>
+            </tbody>
+          </table>
+        )}
       </div>
 
-      {modalOpen && (
-        <EmployeeModal
-          employee={editingEmployee}
-          onSave={handleSaveEmployee}
-          onClose={() => setModalOpen(false)}
-        />
-      )}
+      <EmployeeModal
+        isOpen={modalOpen}
+        onClose={() => setModalOpen(false)}
+        onSave={handleSaveEmployee}
+        employee={editingEmployee}
+        defaultRate={defaultRate}
+      />
     </div>
   );
 }
