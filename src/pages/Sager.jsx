@@ -10,27 +10,8 @@ import { useNotification } from '../utils/notificationUtils';
 
 function Sager() {
   const navigate = useNavigate();
-  const { showSuccess, showError, showInfo, showWarning, showConfirm } = useNotification();
+  const { showSuccess, showError, showConfirm } = useNotification();
 
-  const testNotifications = async () => {
-    showSuccess('Success! Dette er en success besked');
-    setTimeout(() => showError('Error! Dette er en fejlbesked'), 1000);
-    setTimeout(() => showInfo('Info! Dette er en info besked'), 2000);
-    setTimeout(() => showWarning('Warning! Dette er en advarsel'), 3000);
-    setTimeout(async () => {
-      const confirmed = await showConfirm({
-        title: 'Test Bekræftelse',
-        message: 'Vil du teste bekræftelsesdialogen?',
-        confirmText: 'Ja, test den!',
-        cancelText: 'Nej tak'
-      });
-      if (confirmed) {
-        showSuccess('Du klikked bekræft!');
-      } else {
-        showInfo('Du klikked annuller!');
-      }
-    }, 4000);
-  };
   const [projects, setProjects] = useState([]);
   const [filteredProjects, setFilteredProjects] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -73,26 +54,19 @@ function Sager() {
       loadProjectHours(projectList);
     } catch (error) {
       console.error('Error loading projects:', error);
-      alert('Der opstod en fejl ved indlæsning af sager.');
+      showError('Der opstod en fejl ved indlæsning af sager.');
     } finally {
       setLoading(false);
     }
   };
 
   const loadProjectHours = async (projectList) => {
-    const hoursData = {};
-    
+    const hours = {};
     for (const project of projectList) {
-      try {
-        const timeEntries = await getProjectTimeEntries(project.id);
-        hoursData[project.id] = calculateTotalHours(timeEntries);
-      } catch (error) {
-        console.error(`Error loading hours for project ${project.id}:`, error);
-        hoursData[project.id] = 0;
-      }
+      const timeEntries = await getProjectTimeEntries(project.id);
+      hours[project.id] = calculateTotalHours(timeEntries);
     }
-    
-    setProjectHours(hoursData);
+    setProjectHours(hours);
   };
 
   const filterProjects = () => {
@@ -100,11 +74,10 @@ function Sager() {
 
     // Search filter
     if (searchTerm.trim()) {
-      const term = searchTerm.toLowerCase();
-      filtered = filtered.filter(project => 
-        (project.name && project.name.toLowerCase().includes(term)) ||
-        (project.customerName && project.customerName.toLowerCase().includes(term)) ||
-        (project.projectNumber && project.projectNumber.toLowerCase().includes(term))
+      filtered = filtered.filter(project =>
+        project.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        project.customerName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        project.projectNumber?.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
 
@@ -132,58 +105,49 @@ function Sager() {
     setModalOpen(true);
   };
 
-  const handleDeleteProject = async (e, project) => {
-    e.stopPropagation();
-    
-    if (window.confirm(`Er du sikker på, at du vil slette sagen "${project.name}"?\n\nDette vil også slette alle tilknyttede timer.`)) {
-      try {
-        // Delete all time entries for this project
-        const timeEntries = await getProjectTimeEntries(project.id);
-        for (const entry of timeEntries) {
-          await deleteDoc(doc(db, 'timeEntries', entry.id));
-        }
-        
-        // Delete the project
-        await deleteDoc(doc(db, 'projects', project.id));
-        await loadProjects();
-      } catch (error) {
-        console.error('Error deleting project:', error);
-        alert('Der opstod en fejl ved sletning af sag.');
+  const handleSaveProject = async (projectData) => {
+    try {
+      if (editingProject) {
+        // Update existing project
+        await updateDoc(doc(db, 'projects', editingProject.id), projectData);
+        showSuccess('Sag opdateret!');
+      } else {
+        // Create new project
+        const projectNumber = await getNextProjectNumber();
+        await addDoc(collection(db, 'projects'), {
+          ...projectData,
+          projectNumber,
+          createdAt: new Date().toISOString()
+        });
+        showSuccess('Sag oprettet!');
       }
+      setModalOpen(false);
+      loadProjects();
+    } catch (error) {
+      console.error('Error saving project:', error);
+      showError('Der opstod en fejl ved gemning af sag.');
     }
   };
 
-  const handleSaveProject = async (formData) => {
+  const handleDeleteProject = async (e, project) => {
+    e.stopPropagation();
+    
+    const confirmed = await showConfirm({
+      title: 'Slet sag?',
+      message: `Er du sikker på at du vil slette "${project.name}"?`,
+      confirmText: 'Ja, slet',
+      cancelText: 'Annuller'
+    });
+
+    if (!confirmed) return;
+
     try {
-      const currentUser = 'Admin'; // In future, get from auth context
-      
-      if (editingProject) {
-        // Update existing project
-        await updateDoc(doc(db, 'projects', editingProject.id), {
-          ...formData,
-          updatedAt: new Date().toISOString(),
-          updatedBy: currentUser
-        });
-      } else {
-        // Create new project
-        const projectNumber = await getNextProjectNumber(new Date().getFullYear());
-        
-        await addDoc(collection(db, 'projects'), {
-          ...formData,
-          projectNumber,
-          assignedTo: currentUser,
-          createdAt: new Date().toISOString(),
-          createdBy: currentUser,
-          updatedAt: new Date().toISOString(),
-          updatedBy: currentUser
-        });
-      }
-      
-      setModalOpen(false);
-      await loadProjects();
+      await deleteDoc(doc(db, 'projects', project.id));
+      showSuccess('Sag slettet!');
+      loadProjects();
     } catch (error) {
-      console.error('Error saving project:', error);
-      alert('Der opstod en fejl ved gemning af sag.');
+      console.error('Error deleting project:', error);
+      showError('Der opstod en fejl ved sletning af sag.');
     }
   };
 
@@ -201,10 +165,6 @@ function Sager() {
         <h1>Sager</h1>
         <p>Administrér projekter og timeregistrering</p>
       </div>
-
-      <button onClick={testNotifications} className="btn-primary" style={{ margin: '20px' }}>
-        🧪 Test Notifications
-      </button>
 
       <div className="content-card">
         {/* Search and Filters */}
@@ -243,8 +203,8 @@ function Sager() {
             </select>
           </div>
 
-          <button className="btn-create-new" onClick={handleAddProject}>
-            ✨ Opret ny sag
+          <button className="btn-create-new-compact" onClick={handleAddProject}>
+            + Opret sag
           </button>
         </div>
 

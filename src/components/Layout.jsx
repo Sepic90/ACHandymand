@@ -22,7 +22,7 @@ function Layout() {
         <div className="sidebar-header">
           <img 
             src="/logo_white.png" 
-            alt="AC Handymand Logo" 
+            alt="Piblo Logo" 
             className="sidebar-logo"
             onError={(e) => {
               e.target.style.display = 'none';
@@ -40,21 +40,21 @@ function Layout() {
           }}>
             🏠
           </div>
-          <div className="sidebar-title">AC Handymand</div>
+          <div className="sidebar-title">Piblo</div>
         </div>
         
         <nav className="sidebar-nav">
-          <NavLink
-            to="/timeregistrering"
-            className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
-          >
-            Timeregistrering
-          </NavLink>
           <NavLink
             to="/sager"
             className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
           >
             Sager
+          </NavLink>
+          <NavLink
+            to="/timeregistrering"
+            className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
+          >
+            Timeregistrering
           </NavLink>
           <NavLink
             to="/indstillinger"

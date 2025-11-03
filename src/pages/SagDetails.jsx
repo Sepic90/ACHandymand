@@ -209,7 +209,7 @@ function SagDetails() {
       <div className="sag-tab-content">
         {activeTab === 'overblik' && (
           <div className="overblik-tab">
-            <div className="sag-grid">
+            <div className="sag-grid-4col">
               {/* Project Information Card */}
               <div className="sag-card">
                 <div className="card-header">
@@ -291,12 +291,12 @@ function SagDetails() {
               </div>
 
               {/* Time Statistics Card */}
-              <div className="sag-card full-width">
+              <div className="sag-card">
                 <div className="card-header">
                   <h2>Timestatistik</h2>
                 </div>
                 <div className="card-body">
-                  <div className="stats-grid">
+                  <div className="stats-grid-vertical">
                     <div className="stat-item">
                       <div className="stat-value">{formatHours(totalHours)}</div>
                       <div className="stat-label">Totale timer</div>
@@ -314,7 +314,7 @@ function SagDetails() {
                   {project.type === 'fixed-price' && project.fixedPrice > 0 && (
                     <div className="progress-section">
                       <div className="progress-label">
-                        <span>Forbrug af fast pris</span>
+                        <span>Forbrug</span>
                         <span>{Math.round((totalValue / project.fixedPrice) * 100)}%</span>
                       </div>
                       <div className="progress-bar-container">
@@ -332,35 +332,28 @@ function SagDetails() {
               </div>
 
               {/* Recent Activity Card */}
-              {timeEntries.length > 0 && (
-                <div className="sag-card full-width">
-                  <div className="card-header">
-                    <h2>Seneste timeregistreringer</h2>
-                  </div>
-                  <div className="card-body">
-                    <table className="time-entries-table">
-                      <thead>
-                        <tr>
-                          <th>Dato</th>
-                          <th>Medarbejder</th>
-                          <th>Timer</th>
-                          <th>Beskrivelse</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {timeEntries.slice(0, 5).map((entry) => (
-                          <tr key={entry.id}>
-                            <td>{formatDate(entry.date)}</td>
-                            <td>{entry.employeeName || 'Ikke angivet'}</td>
-                            <td>{formatHours(entry.duration || entry.hours || 0)}</td>
-                            <td>{entry.activity || entry.description || '-'}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
+              <div className="sag-card">
+                <div className="card-header">
+                  <h2>Seneste timer</h2>
                 </div>
-              )}
+                <div className="card-body">
+                  {timeEntries.length === 0 ? (
+                    <div className="empty-state-small">
+                      <p>Ingen timeregistreringer</p>
+                    </div>
+                  ) : (
+                    <div className="recent-entries-list">
+                      {timeEntries.slice(0, 5).map((entry) => (
+                        <div key={entry.id} className="recent-entry-item">
+                          <div className="recent-entry-date">{formatDate(entry.date)}</div>
+                          <div className="recent-entry-name">{entry.employeeName || 'Ikke angivet'}</div>
+                          <div className="recent-entry-hours">{formatHours(entry.duration || entry.hours || 0)}</div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
           </div>
         )}
@@ -459,6 +452,7 @@ function SagDetails() {
 
       {editModalOpen && (
         <ProjectModal
+          isOpen={editModalOpen}
           project={project}
           onClose={() => setEditModalOpen(false)}
           onSave={handleSaveProject}

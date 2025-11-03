@@ -12,21 +12,32 @@ function FilePreviewModal({ file, onClose, onNext, onPrev, hasNext, hasPrev }) {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [onClose, onNext, onPrev, hasNext, hasPrev]);
 
+  // Handle non-image files in useEffect to avoid setState during render
+  useEffect(() => {
+    if (!file) return;
+    
+    const isPDF = file.fileType === 'application/pdf';
+    const isImage = file.fileType.startsWith('image/');
+
+    // For PDFs, open in new tab and close modal
+    if (isPDF) {
+      window.open(file.fileURL, '_blank');
+      onClose();
+      return;
+    }
+
+    // For other non-image files, just close
+    if (!isImage) {
+      onClose();
+    }
+  }, [file, onClose]);
+
   if (!file) return null;
 
   const isImage = file.fileType.startsWith('image/');
-  const isPDF = file.fileType === 'application/pdf';
 
-  // For PDFs, open in new tab instead of modal
-  if (isPDF) {
-    window.open(file.fileURL, '_blank');
-    onClose();
-    return null;
-  }
-
-  // Only show modal for images
+  // Only render modal for images
   if (!isImage) {
-    onClose();
     return null;
   }
 
