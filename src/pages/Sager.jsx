@@ -181,7 +181,7 @@ function Sager() {
       </div>
 
       <div className="content-card">
-        {/* Filters and Search */}
+        {/* Search and Filters */}
         <div className="sager-controls">
           <div className="search-box">
             <input
@@ -215,11 +215,11 @@ function Sager() {
               <option value="fixed-price">Fast Pris</option>
               <option value="time-material">Tid & Materiale</option>
             </select>
-
-            <button className="btn-primary" onClick={handleAddProject}>
-              + Ny Sag
-            </button>
           </div>
+
+          <button className="btn-create-new" onClick={handleAddProject}>
+            ✨ Opret ny sag
+          </button>
         </div>
 
         {/* Projects Table */}

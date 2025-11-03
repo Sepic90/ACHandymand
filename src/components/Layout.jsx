@@ -51,6 +51,12 @@ function Layout() {
             Timeregistrering
           </NavLink>
           <NavLink
+            to="/sager"
+            className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
+          >
+            Sager
+          </NavLink>
+          <NavLink
             to="/indstillinger"
             className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
           >
