@@ -6,9 +6,31 @@ import ProjectModal from '../components/ProjectModal';
 import ProjectStatusBadge from '../components/ProjectStatusBadge';
 import { getNextProjectNumber, calculateTotalHours, getProjectTimeEntries } from '../utils/projectUtils';
 import { formatCurrency } from '../utils/formatUtils';
+import { useNotification } from '../utils/notificationUtils';
 
 function Sager() {
   const navigate = useNavigate();
+  const { showSuccess, showError, showInfo, showWarning, showConfirm } = useNotification();
+
+  const testNotifications = async () => {
+    showSuccess('Success! Dette er en success besked');
+    setTimeout(() => showError('Error! Dette er en fejlbesked'), 1000);
+    setTimeout(() => showInfo('Info! Dette er en info besked'), 2000);
+    setTimeout(() => showWarning('Warning! Dette er en advarsel'), 3000);
+    setTimeout(async () => {
+      const confirmed = await showConfirm({
+        title: 'Test Bekræftelse',
+        message: 'Vil du teste bekræftelsesdialogen?',
+        confirmText: 'Ja, test den!',
+        cancelText: 'Nej tak'
+      });
+      if (confirmed) {
+        showSuccess('Du klikked bekræft!');
+      } else {
+        showInfo('Du klikked annuller!');
+      }
+    }, 4000);
+  };
   const [projects, setProjects] = useState([]);
   const [filteredProjects, setFilteredProjects] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -179,6 +201,10 @@ function Sager() {
         <h1>Sager</h1>
         <p>Administrér projekter og timeregistrering</p>
       </div>
+
+      <button onClick={testNotifications} className="btn-primary" style={{ margin: '20px' }}>
+        🧪 Test Notifications
+      </button>
 
       <div className="content-card">
         {/* Search and Filters */}

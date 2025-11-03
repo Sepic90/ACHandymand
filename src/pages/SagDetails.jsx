@@ -12,6 +12,8 @@ import {
   calculateTotalValue 
 } from '../utils/projectUtils';
 import { formatCurrency, formatDate, formatHours, createMapsUrl, formatPhone } from '../utils/formatUtils';
+import FilesTab from '../components/files/FilesTab';
+
 
 function SagDetails() {
   const { id } = useParams();
@@ -218,7 +220,14 @@ function SagDetails() {
           </div>
         </div>
       </div>
-
+	  
+      {/* Files Tab */}
+      <div className="content-card">
+        <div className="card-header">
+          <h2>Filer</h2>
+        </div>
+        <FilesTab project={project} currentUser="Admin" />
+      </div>
       {/* Time Entries Summary */}
       <div className="content-card">
         <div className="card-header">
