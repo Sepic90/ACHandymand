@@ -3,27 +3,3 @@
     "default": "achandymand-145da"
   }
 }
-```
-
----
-
-## Update Firestore Security Rules
-
-You need to update the rules in the **Firebase Console** to allow reading and writing data:
-
-### Step-by-step:
-
-1. **Go to Firebase Console**: https://console.firebase.google.com/
-2. **Select your project**: "achandymand-145da"
-3. **Click "Firestore Database"** in the left menu
-4. **Click the "Rules" tab** at the top
-5. **Replace ALL the rules with this:**
-```
-rules_version = '2';
-service cloud.firestore {
-  match /databases/{database}/documents {
-    match /employees/{employeeId} {
-      allow read, write: if request.auth != null;
-    }
-  }
-}
