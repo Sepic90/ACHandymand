@@ -1,21 +1,15 @@
 import React, { useState, useEffect } from 'react';
 
-function EmployeeModal({ employee, onSave, onClose, isOpen, defaultRate = 450 }) {
+function EmployeeModal({ employee, onSave, onClose, isOpen }) {
   const [name, setName] = useState('');
-  const [useCustomRate, setUseCustomRate] = useState(false);
-  const [customRate, setCustomRate] = useState(450);
 
   useEffect(() => {
     if (employee) {
       setName(employee.name || '');
-      setUseCustomRate(employee.useCustomRate || false);
-      setCustomRate(employee.customRate || defaultRate);
     } else {
       setName('');
-      setUseCustomRate(false);
-      setCustomRate(defaultRate);
     }
-  }, [employee, isOpen, defaultRate]);
+  }, [employee, isOpen]);
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -25,13 +19,7 @@ function EmployeeModal({ employee, onSave, onClose, isOpen, defaultRate = 450 })
       return;
     }
     
-    const employeeData = {
-      name: name.trim(),
-      useCustomRate,
-      customRate: useCustomRate ? parseFloat(customRate) || defaultRate : null
-    };
-    
-    onSave(employeeData);
+    onSave({ name: name.trim() });
   };
 
   if (!isOpen) return null;
@@ -57,48 +45,6 @@ function EmployeeModal({ employee, onSave, onClose, isOpen, defaultRate = 450 })
                 autoFocus
                 required
               />
-            </div>
-
-            <div className="form-group">
-              <label>Timepris</label>
-              
-              <div className="radio-option">
-                <label>
-                  <input
-                    type="radio"
-                    name="rateType"
-                    checked={!useCustomRate}
-                    onChange={() => setUseCustomRate(false)}
-                  />
-                  <span>Brug standard timepris ({defaultRate} kr/time)</span>
-                </label>
-              </div>
-
-              <div className="radio-option">
-                <label>
-                  <input
-                    type="radio"
-                    name="rateType"
-                    checked={useCustomRate}
-                    onChange={() => setUseCustomRate(true)}
-                  />
-                  <span>Tilpasset timepris</span>
-                </label>
-              </div>
-
-              {useCustomRate && (
-                <div className="custom-rate-container">
-                  <input
-                    type="number"
-                    value={customRate}
-                    onChange={(e) => setCustomRate(e.target.value)}
-                    min="0"
-                    step="50"
-                    placeholder="450"
-                  />
-                  <span>kr/time</span>
-                </div>
-              )}
             </div>
           </div>
           

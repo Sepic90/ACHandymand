@@ -97,12 +97,12 @@ function Indstillinger() {
     try {
       if (editingEmployee) {
         await updateDoc(doc(db, 'employees', editingEmployee.id), {
-          ...employeeData,
+          name: employeeData.name,
           updatedAt: new Date().toISOString()
         });
       } else {
         await addDoc(collection(db, 'employees'), { 
-          ...employeeData,
+          name: employeeData.name,
           createdAt: new Date().toISOString()
         });
       }
@@ -113,13 +113,6 @@ function Indstillinger() {
       console.error('Error saving employee:', error);
       alert('Der opstod en fejl ved gemning af medarbejder.');
     }
-  };
-
-  const getEmployeeRate = (employee) => {
-    if (employee.useCustomRate && employee.customRate) {
-      return employee.customRate;
-    }
-    return defaultRate;
   };
 
   return (
@@ -178,7 +171,7 @@ function Indstillinger() {
                 {defaultRate} kr
               </div>
               <div style={{ fontSize: '14px', color: '#7f8c8d' }}>
-                Standard pris der bruges for alle medarbejdere
+                Standard timepris brugt for alle sager (kan tilpasses per sag)
               </div>
             </div>
             <button 
@@ -211,7 +204,6 @@ function Indstillinger() {
             <thead>
               <tr style={{ borderBottom: '2px solid #ecf0f1' }}>
                 <th style={{ textAlign: 'left', padding: '12px', color: '#2c3e50', fontWeight: '600' }}>Navn</th>
-                <th style={{ textAlign: 'left', padding: '12px', color: '#2c3e50', fontWeight: '600' }}>Timepris</th>
                 <th style={{ textAlign: 'right', padding: '12px', color: '#2c3e50', fontWeight: '600' }}>Handlinger</th>
               </tr>
             </thead>
@@ -220,24 +212,6 @@ function Indstillinger() {
                 <tr key={employee.id} style={{ borderBottom: '1px solid #ecf0f1' }}>
                   <td style={{ padding: '15px' }}>
                     <strong style={{ fontSize: '15px', color: '#2c3e50' }}>{employee.name}</strong>
-                  </td>
-                  <td style={{ padding: '15px' }}>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                      <span style={{ fontWeight: '600', color: '#2c3e50' }}>
-                        {getEmployeeRate(employee)} kr/time
-                      </span>
-                      <span style={{
-                        fontSize: '11px',
-                        padding: '2px 8px',
-                        borderRadius: '10px',
-                        display: 'inline-block',
-                        width: 'fit-content',
-                        backgroundColor: employee.useCustomRate ? '#e3f2fd' : '#e8f5e9',
-                        color: employee.useCustomRate ? '#3498db' : '#27ae60'
-                      }}>
-                        {employee.useCustomRate ? 'Tilpasset' : 'Standard'}
-                      </span>
-                    </div>
                   </td>
                   <td style={{ padding: '15px', textAlign: 'right' }}>
                     <button
@@ -265,7 +239,6 @@ function Indstillinger() {
         onClose={() => setModalOpen(false)}
         onSave={handleSaveEmployee}
         employee={editingEmployee}
-        defaultRate={defaultRate}
       />
     </div>
   );

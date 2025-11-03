@@ -7,6 +7,7 @@ function TimeEntryModal({ isOpen, onClose, onSave, timeEntry, defaultRate = 450 
     duration: '',
     activity: '',
     billable: true,
+    useCustomRate: false,
     rate: defaultRate
   });
 
@@ -15,20 +16,27 @@ function TimeEntryModal({ isOpen, onClose, onSave, timeEntry, defaultRate = 450 
 
   useEffect(() => {
     if (timeEntry) {
+      // When editing existing entry
+      const entryRate = timeEntry.rate || defaultRate;
+      const isCustom = entryRate !== defaultRate;
+      
       setFormData({
         date: timeEntry.date || '',
-        duration: timeEntry.duration || '',
+        duration: timeEntry.duration?.toString() || '',
         activity: timeEntry.activity || '',
         billable: timeEntry.billable !== undefined ? timeEntry.billable : true,
-        rate: timeEntry.rate || defaultRate
+        useCustomRate: isCustom,
+        rate: entryRate
       });
     } else {
+      // New entry
       const today = new Date().toISOString().split('T')[0];
       setFormData({
         date: today,
         duration: '',
         activity: '',
         billable: true,
+        useCustomRate: false,
         rate: defaultRate
       });
     }
@@ -36,17 +44,43 @@ function TimeEntryModal({ isOpen, onClose, onSave, timeEntry, defaultRate = 450 
   }, [timeEntry, isOpen, defaultRate]);
 
   useEffect(() => {
+    // Auto-calculate total
     const duration = parseDecimal(formData.duration);
-    const rate = parseDecimal(formData.rate);
+    const rate = formData.billable ? parseDecimal(formData.rate) : 0;
     setCalculatedTotal(duration * rate);
-  }, [formData.duration, formData.rate]);
+  }, [formData.duration, formData.rate, formData.billable]);
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: type === 'checkbox' ? checked : value
-    }));
+    
+    if (type === 'checkbox') {
+      if (name === 'billable') {
+        // When toggling billable, reset rate to default
+        setFormData(prev => ({
+          ...prev,
+          billable: checked,
+          useCustomRate: false,
+          rate: checked ? defaultRate : 0
+        }));
+      } else if (name === 'useCustomRate') {
+        // When toggling custom rate
+        setFormData(prev => ({
+          ...prev,
+          useCustomRate: checked,
+          rate: checked ? (prev.rate || defaultRate) : defaultRate
+        }));
+      } else {
+        setFormData(prev => ({
+          ...prev,
+          [name]: checked
+        }));
+      }
+    } else {
+      setFormData(prev => ({
+        ...prev,
+        [name]: value
+      }));
+    }
     
     // Clear error for this field
     if (errors[name]) {
@@ -80,9 +114,11 @@ function TimeEntryModal({ isOpen, onClose, onSave, timeEntry, defaultRate = 450 
       newErrors.activity = 'Aktivitetsbeskrivelse skal være mindst 3 tegn';
     }
 
-    const rate = parseDecimal(formData.rate);
-    if (!formData.rate || rate <= 0) {
-      newErrors.rate = 'Timepris skal være et positivt tal';
+    if (formData.billable) {
+      const rate = parseDecimal(formData.rate);
+      if (!formData.rate || rate <= 0) {
+        newErrors.rate = 'Timepris skal være et positivt tal';
+      }
     }
 
     setErrors(newErrors);
@@ -93,11 +129,13 @@ function TimeEntryModal({ isOpen, onClose, onSave, timeEntry, defaultRate = 450 
     e.preventDefault();
     
     if (validate()) {
-      // Convert duration and rate to numbers
+      // Prepare data to save
       const dataToSave = {
-        ...formData,
+        date: formData.date,
         duration: parseDecimal(formData.duration),
-        rate: parseDecimal(formData.rate)
+        activity: formData.activity,
+        billable: formData.billable,
+        rate: formData.billable ? parseDecimal(formData.rate) : 0
       };
       onSave(dataToSave);
     }
@@ -107,89 +145,126 @@ function TimeEntryModal({ isOpen, onClose, onSave, timeEntry, defaultRate = 450 
 
   return (
     <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+      <div className="modal-content time-entry-modal" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
           <h2>{timeEntry ? 'Redigér Timer' : 'Tilføj Timer'}</h2>
           <button className="modal-close" onClick={onClose}>&times;</button>
         </div>
 
-        <form onSubmit={handleSubmit}>
-          <div className="modal-body">
-            <div className="form-group">
-              <label htmlFor="date">Dato *</label>
-              <input
-                type="date"
-                id="date"
-                name="date"
-                value={formData.date}
-                onChange={handleChange}
-                className={errors.date ? 'error' : ''}
-                max={new Date().toISOString().split('T')[0]}
-              />
-              {errors.date && <span className="error-message">{errors.date}</span>}
-            </div>
-
-            <div className="form-group">
-              <label htmlFor="duration">Varighed (timer) *</label>
-              <input
-                type="text"
-                id="duration"
-                name="duration"
-                value={formData.duration}
-                onChange={handleChange}
-                className={errors.duration ? 'error' : ''}
-                placeholder="F.eks. 4,5"
-              />
-              {errors.duration && <span className="error-message">{errors.duration}</span>}
-              <small className="form-hint">Brug komma for decimaler (f.eks. 4,5 timer)</small>
-            </div>
-
-            <div className="form-group">
-              <label htmlFor="activity">Aktivitetsbeskrivelse *</label>
-              <textarea
-                id="activity"
-                name="activity"
-                value={formData.activity}
-                onChange={handleChange}
-                className={errors.activity ? 'error' : ''}
-                rows="3"
-                placeholder="Beskriv det udførte arbejde..."
-              />
-              {errors.activity && <span className="error-message">{errors.activity}</span>}
-            </div>
-
-            <div className="form-group">
-              <label className="checkbox-label">
-                <input
-                  type="checkbox"
-                  name="billable"
-                  checked={formData.billable}
-                  onChange={handleChange}
-                />
-                <span>Fakturerbar</span>
-              </label>
-            </div>
-
-            <div className="form-group">
-              <label htmlFor="rate">Timepris (DKK) *</label>
-              <input
-                type="text"
-                id="rate"
-                name="rate"
-                value={formData.rate}
-                onChange={handleChange}
-                className={errors.rate ? 'error' : ''}
-                placeholder="450"
-              />
-              {errors.rate && <span className="error-message">{errors.rate}</span>}
-            </div>
-
-            <div className="calculated-total">
-              <strong>Beregnet total:</strong> {formatCurrency(calculatedTotal)}
-            </div>
+        <form onSubmit={handleSubmit} className="modal-form">
+          <div className="form-group">
+            <label htmlFor="date">Dato *</label>
+            <input
+              type="date"
+              id="date"
+              name="date"
+              value={formData.date}
+              onChange={handleChange}
+              className={errors.date ? 'input-error' : ''}
+              max={new Date().toISOString().split('T')[0]}
+            />
+            {errors.date && <span className="error-text">{errors.date}</span>}
           </div>
 
-          <div className="modal-footer">
+          <div className="form-group">
+            <label htmlFor="duration">Varighed (timer) *</label>
+            <input
+              type="text"
+              id="duration"
+              name="duration"
+              value={formData.duration}
+              onChange={handleChange}
+              className={errors.duration ? 'input-error' : ''}
+              placeholder="F.eks. 4,5"
+            />
+            {errors.duration && <span className="error-text">{errors.duration}</span>}
+            <small className="form-hint">Brug komma for decimaler (f.eks. 4,5 timer)</small>
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="activity">Aktivitetsbeskrivelse *</label>
+            <textarea
+              id="activity"
+              name="activity"
+              value={formData.activity}
+              onChange={handleChange}
+              className={errors.activity ? 'input-error' : ''}
+              rows="3"
+              placeholder="Beskriv det udførte arbejde..."
+            />
+            {errors.activity && <span className="error-text">{errors.activity}</span>}
+          </div>
+
+          <div className="checkbox-group-modern">
+            <label className="checkbox-modern">
+              <input
+                type="checkbox"
+                name="billable"
+                checked={formData.billable}
+                onChange={handleChange}
+              />
+              <span className="checkbox-label">Fakturerbar</span>
+            </label>
+          </div>
+
+          {/* Timepris Section */}
+          <div className="rate-section">
+            <label>Timepris (DKK) *</label>
+            
+            {!formData.billable ? (
+              // Not billable - show 0 kr
+              <div className="rate-display disabled">
+                <span className="rate-value">0 kr</span>
+                <span className="rate-note">Ikke fakturerbar</span>
+              </div>
+            ) : (
+              <>
+                {/* Standard Rate Display */}
+                <div className={`rate-display ${formData.useCustomRate ? 'disabled' : ''}`}>
+                  <span className="rate-value">{defaultRate} kr</span>
+                  <span className="rate-note">Standard timepris</span>
+                </div>
+
+                {/* Custom Rate Checkbox */}
+                <div className="checkbox-group-modern" style={{ marginTop: '12px' }}>
+                  <label className="checkbox-modern">
+                    <input
+                      type="checkbox"
+                      name="useCustomRate"
+                      checked={formData.useCustomRate}
+                      onChange={handleChange}
+                    />
+                    <span className="checkbox-label">Anden timepris</span>
+                  </label>
+                </div>
+
+                {/* Custom Rate Input */}
+                {formData.useCustomRate && (
+                  <div className="custom-rate-input" style={{ marginTop: '12px' }}>
+                    <input
+                      type="text"
+                      name="rate"
+                      value={formData.rate}
+                      onChange={handleChange}
+                      className={errors.rate ? 'input-error' : ''}
+                      placeholder="450"
+                    />
+                    <span className="rate-suffix">kr/time</span>
+                  </div>
+                )}
+                
+                {errors.rate && <span className="error-text">{errors.rate}</span>}
+              </>
+            )}
+          </div>
+
+          {/* Calculated Total */}
+          <div className="calculated-total-box">
+            <div className="total-label">Beregnet total:</div>
+            <div className="total-value">{formatCurrency(calculatedTotal)}</div>
+          </div>
+
+          <div className="modal-actions">
             <button type="button" className="btn-secondary" onClick={onClose}>
               Annuller
             </button>
