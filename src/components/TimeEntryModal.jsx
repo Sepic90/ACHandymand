@@ -1,69 +1,65 @@
 import React, { useState, useEffect } from 'react';
-import { formatCurrency, parseDecimal } from '../utils/formatUtils';
 
-function TimeEntryModal({ isOpen, onClose, onSave, timeEntry, defaultRate = 450 }) {
+function TimeEntryModal({ timeEntry, defaultRate, employees, onSave, onClose }) {
   const [formData, setFormData] = useState({
     date: '',
     duration: '',
     activity: '',
     billable: true,
+    rate: defaultRate,
     useCustomRate: false,
-    rate: defaultRate
+    employeeName: '',
+    selectedEmployees: []
   });
 
   const [errors, setErrors] = useState({});
-  const [calculatedTotal, setCalculatedTotal] = useState(0);
+  const isOpen = true;
 
   useEffect(() => {
     if (timeEntry) {
-      // When editing existing entry
-      const entryRate = timeEntry.rate || defaultRate;
-      const isCustom = entryRate !== defaultRate;
-      
       setFormData({
         date: timeEntry.date || '',
-        duration: timeEntry.duration?.toString() || '',
-        activity: timeEntry.activity || '',
+        duration: String(timeEntry.duration || timeEntry.hours || ''),
+        activity: timeEntry.activity || timeEntry.description || '',
         billable: timeEntry.billable !== undefined ? timeEntry.billable : true,
-        useCustomRate: isCustom,
-        rate: entryRate
+        rate: timeEntry.rate || timeEntry.hourlyRate || defaultRate,
+        useCustomRate: timeEntry.rate !== defaultRate,
+        employeeName: timeEntry.employeeName || '',
+        selectedEmployees: timeEntry.employeeName ? [timeEntry.employeeName] : []
       });
     } else {
-      // New entry
       const today = new Date().toISOString().split('T')[0];
-      setFormData({
+      setFormData(prev => ({
+        ...prev,
         date: today,
         duration: '',
         activity: '',
         billable: true,
+        rate: defaultRate,
         useCustomRate: false,
-        rate: defaultRate
-      });
+        employeeName: employees.length > 0 ? employees[0].name : '',
+        selectedEmployees: []
+      }));
     }
-    setErrors({});
-  }, [timeEntry, isOpen, defaultRate]);
+  }, [timeEntry, defaultRate, employees, isOpen]);
 
-  useEffect(() => {
-    // Auto-calculate total
-    const duration = parseDecimal(formData.duration);
-    const rate = formData.billable ? parseDecimal(formData.rate) : 0;
-    setCalculatedTotal(duration * rate);
-  }, [formData.duration, formData.rate, formData.billable]);
+  const parseDecimal = (str) => {
+    if (!str) return 0;
+    const normalized = String(str).replace(',', '.');
+    return parseFloat(normalized) || 0;
+  };
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
     
     if (type === 'checkbox') {
       if (name === 'billable') {
-        // When toggling billable, reset rate to default
         setFormData(prev => ({
           ...prev,
           billable: checked,
-          useCustomRate: false,
-          rate: checked ? defaultRate : 0
+          rate: checked ? (prev.useCustomRate ? prev.rate : defaultRate) : 0
         }));
       } else if (name === 'useCustomRate') {
-        // When toggling custom rate
         setFormData(prev => ({
           ...prev,
           useCustomRate: checked,
@@ -82,13 +78,27 @@ function TimeEntryModal({ isOpen, onClose, onSave, timeEntry, defaultRate = 450 
       }));
     }
     
-    // Clear error for this field
     if (errors[name]) {
       setErrors(prev => ({
         ...prev,
         [name]: null
       }));
     }
+  };
+
+  const handleEmployeeToggle = (employeeName) => {
+    setFormData(prev => {
+      const isSelected = prev.selectedEmployees.includes(employeeName);
+      const newSelected = isSelected
+        ? prev.selectedEmployees.filter(name => name !== employeeName)
+        : [...prev.selectedEmployees, employeeName];
+      
+      return {
+        ...prev,
+        selectedEmployees: newSelected,
+        employeeName: newSelected.length > 0 ? newSelected.join(', ') : ''
+      };
+    });
   };
 
   const validate = () => {
@@ -121,6 +131,10 @@ function TimeEntryModal({ isOpen, onClose, onSave, timeEntry, defaultRate = 450 
       }
     }
 
+    if (formData.selectedEmployees.length === 0) {
+      newErrors.employeeName = 'Vælg mindst én medarbejder';
+    }
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -129,13 +143,13 @@ function TimeEntryModal({ isOpen, onClose, onSave, timeEntry, defaultRate = 450 
     e.preventDefault();
     
     if (validate()) {
-      // Prepare data to save
       const dataToSave = {
         date: formData.date,
         duration: parseDecimal(formData.duration),
         activity: formData.activity,
         billable: formData.billable,
-        rate: formData.billable ? parseDecimal(formData.rate) : 0
+        rate: formData.billable ? parseDecimal(formData.rate) : 0,
+        employeeName: formData.employeeName
       };
       onSave(dataToSave);
     }
@@ -182,6 +196,27 @@ function TimeEntryModal({ isOpen, onClose, onSave, timeEntry, defaultRate = 450 
           </div>
 
           <div className="form-group">
+            <label>Medarbejder(e) *</label>
+            <div className="employee-multi-select">
+              {employees.length === 0 ? (
+                <p className="no-employees-text">Ingen medarbejdere tilgængelige. Tilføj medarbejdere i Indstillinger.</p>
+              ) : (
+                employees.map(employee => (
+                  <label key={employee.id} className="checkbox-modern">
+                    <input
+                      type="checkbox"
+                      checked={formData.selectedEmployees.includes(employee.name)}
+                      onChange={() => handleEmployeeToggle(employee.name)}
+                    />
+                    <span className="checkbox-label">{employee.name}</span>
+                  </label>
+                ))
+              )}
+            </div>
+            {errors.employeeName && <span className="error-text">{errors.employeeName}</span>}
+          </div>
+
+          <div className="form-group">
             <label htmlFor="activity">Aktivitetsbeskrivelse *</label>
             <textarea
               id="activity"
@@ -207,26 +242,22 @@ function TimeEntryModal({ isOpen, onClose, onSave, timeEntry, defaultRate = 450 
             </label>
           </div>
 
-          {/* Timepris Section */}
           <div className="rate-section">
             <label>Timepris (DKK) *</label>
             
             {!formData.billable ? (
-              // Not billable - show 0 kr
               <div className="rate-display disabled">
                 <span className="rate-value">0 kr</span>
                 <span className="rate-note">Ikke fakturerbar</span>
               </div>
             ) : (
               <>
-                {/* Standard Rate Display */}
-                <div className={`rate-display ${formData.useCustomRate ? 'disabled' : ''}`}>
+                <div className={`rate-display ${formData.useCustomRate ? 'inactive' : 'active'}`}>
                   <span className="rate-value">{defaultRate} kr</span>
                   <span className="rate-note">Standard timepris</span>
                 </div>
 
-                {/* Custom Rate Checkbox */}
-                <div className="checkbox-group-modern" style={{ marginTop: '12px' }}>
+                <div className="checkbox-group-modern">
                   <label className="checkbox-modern">
                     <input
                       type="checkbox"
@@ -234,42 +265,34 @@ function TimeEntryModal({ isOpen, onClose, onSave, timeEntry, defaultRate = 450 
                       checked={formData.useCustomRate}
                       onChange={handleChange}
                     />
-                    <span className="checkbox-label">Anden timepris</span>
+                    <span className="checkbox-label">Brug tilpasset timepris</span>
                   </label>
                 </div>
 
-                {/* Custom Rate Input */}
                 {formData.useCustomRate && (
-                  <div className="custom-rate-input" style={{ marginTop: '12px' }}>
+                  <div className="form-group">
                     <input
                       type="text"
                       name="rate"
                       value={formData.rate}
                       onChange={handleChange}
                       className={errors.rate ? 'input-error' : ''}
-                      placeholder="450"
+                      placeholder="F.eks. 550"
                     />
-                    <span className="rate-suffix">kr/time</span>
+                    {errors.rate && <span className="error-text">{errors.rate}</span>}
+                    <small className="form-hint">Brug komma for decimaler (f.eks. 550,50)</small>
                   </div>
                 )}
-                
-                {errors.rate && <span className="error-text">{errors.rate}</span>}
               </>
             )}
           </div>
 
-          {/* Calculated Total */}
-          <div className="calculated-total-box">
-            <div className="total-label">Beregnet total:</div>
-            <div className="total-value">{formatCurrency(calculatedTotal)}</div>
-          </div>
-
-          <div className="modal-actions">
+          <div className="modal-footer">
             <button type="button" className="btn-secondary" onClick={onClose}>
               Annuller
             </button>
             <button type="submit" className="btn-primary">
-              {timeEntry ? 'Gem Ændringer' : 'Tilføj Timer'}
+              {timeEntry ? 'Gem ændringer' : 'Tilføj timer'}
             </button>
           </div>
         </form>

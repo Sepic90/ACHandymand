@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { doc, getDoc, updateDoc, addDoc, deleteDoc, collection } from 'firebase/firestore';
+import { doc, getDoc, updateDoc, addDoc, deleteDoc, collection, getDocs } from 'firebase/firestore';
 import { db } from '../services/firebase';
 import ProjectStatusBadge from '../components/ProjectStatusBadge';
 import ProjectModal from '../components/ProjectModal';
@@ -20,6 +20,7 @@ function SagDetails() {
   
   const [project, setProject] = useState(null);
   const [timeEntries, setTimeEntries] = useState([]);
+  const [employees, setEmployees] = useState([]);
   const [loading, setLoading] = useState(true);
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [timeEntryModalOpen, setTimeEntryModalOpen] = useState(false);
@@ -30,6 +31,7 @@ function SagDetails() {
   useEffect(() => {
     loadProject();
     loadTimeEntries();
+    loadEmployees();
   }, [id]);
 
   const loadProject = async () => {
@@ -55,6 +57,20 @@ function SagDetails() {
       setTimeEntries(entries);
     } catch (error) {
       console.error('Error loading time entries:', error);
+    }
+  };
+
+  const loadEmployees = async () => {
+    try {
+      const querySnapshot = await getDocs(collection(db, 'employees'));
+      const employeeList = [];
+      querySnapshot.forEach((doc) => {
+        employeeList.push({ id: doc.id, ...doc.data() });
+      });
+      employeeList.sort((a, b) => a.name.localeCompare(b.name));
+      setEmployees(employeeList);
+    } catch (error) {
+      console.error('Error loading employees:', error);
     }
   };
 
@@ -102,15 +118,26 @@ function SagDetails() {
 
   const handleSaveTimeEntry = async (formData) => {
     try {
+      const dataToSave = {
+        ...formData,
+        projectId: id,
+        duration: formData.duration,
+        hours: formData.duration,
+        hourlyRate: formData.rate || 0,
+        employeeName: formData.employeeName || 'Ikke angivet',
+        activity: formData.activity,
+        billable: formData.billable,
+        rate: formData.rate || 0
+      };
+
       if (editingTimeEntry) {
         await updateDoc(doc(db, 'timeEntries', editingTimeEntry.id), {
-          ...formData,
+          ...dataToSave,
           updatedAt: new Date().toISOString()
         });
       } else {
         await addDoc(collection(db, 'timeEntries'), {
-          ...formData,
-          projectId: id,
+          ...dataToSave,
           createdAt: new Date().toISOString(),
           createdBy: 'Admin'
         });
@@ -203,41 +230,19 @@ function SagDetails() {
                     </div>
                     {project.type === 'fixed-price' && (
                       <div className="info-item">
-                        <span className="info-label">Fast Pris:</span>
+                        <span className="info-label">Fast pris:</span>
                         <span className="info-value">{formatCurrency(project.fixedPrice)}</span>
                       </div>
                     )}
-                    {project.hourlyRate && (
-                      <div className="info-item">
-                        <span className="info-label">Timepris:</span>
-                        <span className="info-value">{formatCurrency(project.hourlyRate)}/time</span>
-                      </div>
-                    )}
-                    {project.estimatedHours && (
-                      <div className="info-item">
-                        <span className="info-label">Estimeret timer:</span>
-                        <span className="info-value">{formatHours(project.estimatedHours)}</span>
-                      </div>
-                    )}
-                    {project.startDate && (
-                      <div className="info-item">
-                        <span className="info-label">Startdato:</span>
-                        <span className="info-value">{formatDate(project.startDate)}</span>
-                      </div>
-                    )}
-                    {project.endDate && (
-                      <div className="info-item">
-                        <span className="info-label">Slutdato:</span>
-                        <span className="info-value">{formatDate(project.endDate)}</span>
-                      </div>
-                    )}
-                  </div>
-                  {project.description && (
-                    <div className="info-description">
-                      <span className="info-label">Beskrivelse:</span>
-                      <p>{project.description}</p>
+                    <div className="info-item">
+                      <span className="info-label">Oprettet:</span>
+                      <span className="info-value">{formatDate(project.createdAt)}</span>
                     </div>
-                  )}
+                    <div className="info-item full-width">
+                      <span className="info-label">Beskrivelse:</span>
+                      <p className="info-value">{project.description || 'Ingen beskrivelse'}</p>
+                    </div>
+                  </div>
                 </div>
               </div>
 
@@ -248,51 +253,45 @@ function SagDetails() {
                 </div>
                 <div className="card-body">
                   <div className="info-grid">
-                    <div className="info-item">
+                    <div className="info-item full-width">
                       <span className="info-label">Navn:</span>
-                      <span className="info-value">{project.customerName || '-'}</span>
+                      <span className="info-value">{project.customerName}</span>
                     </div>
-                    <div className="info-item">
-                      <span className="info-label">Telefon:</span>
-                      {project.customerPhone ? (
+                    {project.customerPhone && (
+                      <div className="info-item">
+                        <span className="info-label">Telefon:</span>
                         <a href={`tel:${project.customerPhone}`} className="info-link">
                           {formatPhone(project.customerPhone)}
                         </a>
-                      ) : (
-                        <span className="info-value">-</span>
-                      )}
-                    </div>
-                    <div className="info-item">
-                      <span className="info-label">Email:</span>
-                      {project.customerEmail ? (
+                      </div>
+                    )}
+                    {project.customerEmail && (
+                      <div className="info-item">
+                        <span className="info-label">Email:</span>
                         <a href={`mailto:${project.customerEmail}`} className="info-link">
                           {project.customerEmail}
                         </a>
-                      ) : (
-                        <span className="info-value">-</span>
-                      )}
-                    </div>
-                    <div className="info-item full-width">
-                      <span className="info-label">Adresse:</span>
-                      {project.address ? (
+                      </div>
+                    )}
+                    {project.customerAddress && (
+                      <div className="info-item full-width">
+                        <span className="info-label">Adresse:</span>
                         <a 
-                          href={createMapsUrl(project.address)} 
+                          href={createMapsUrl(project.customerAddress)} 
                           target="_blank" 
                           rel="noopener noreferrer"
                           className="info-link"
                         >
-                          {project.address} 📍
+                          {project.customerAddress}
                         </a>
-                      ) : (
-                        <span className="info-value">-</span>
-                      )}
-                    </div>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
 
               {/* Time Statistics Card */}
-              <div className="sag-card">
+              <div className="sag-card full-width">
                 <div className="card-header">
                   <h2>Timestatistik</h2>
                 </div>
@@ -311,18 +310,19 @@ function SagDetails() {
                       <div className="stat-label">Total værdi</div>
                     </div>
                   </div>
-                  {project.type === 'fixed-price' && project.fixedPrice && (
+
+                  {project.type === 'fixed-price' && project.fixedPrice > 0 && (
                     <div className="progress-section">
                       <div className="progress-label">
-                        <span>Fremskridt</span>
+                        <span>Forbrug af fast pris</span>
                         <span>{Math.round((totalValue / project.fixedPrice) * 100)}%</span>
                       </div>
                       <div className="progress-bar-container">
                         <div 
-                          className="progress-bar" 
+                          className="progress-bar"
                           style={{ 
                             width: `${Math.min((totalValue / project.fixedPrice) * 100, 100)}%`,
-                            backgroundColor: totalValue > project.fixedPrice ? '#e74c3c' : '#27ae60'
+                            background: totalValue > project.fixedPrice ? '#e74c3c' : '#27ae60'
                           }}
                         ></div>
                       </div>
@@ -351,9 +351,9 @@ function SagDetails() {
                         {timeEntries.slice(0, 5).map((entry) => (
                           <tr key={entry.id}>
                             <td>{formatDate(entry.date)}</td>
-                            <td>{entry.employeeName}</td>
-                            <td>{formatHours(entry.hours)}</td>
-                            <td>{entry.description || '-'}</td>
+                            <td>{entry.employeeName || 'Ikke angivet'}</td>
+                            <td>{formatHours(entry.duration || entry.hours || 0)}</td>
+                            <td>{entry.activity || entry.description || '-'}</td>
                           </tr>
                         ))}
                       </tbody>
@@ -416,12 +416,12 @@ function SagDetails() {
                         {timeEntries.map((entry) => (
                           <tr key={entry.id}>
                             <td>{formatDate(entry.date)}</td>
-                            <td>{entry.employeeName}</td>
-                            <td>{formatHours(entry.hours)}</td>
-                            <td>{formatCurrency(entry.hourlyRate)}</td>
+                            <td>{entry.employeeName || 'Ikke angivet'}</td>
+                            <td>{formatHours(entry.duration || entry.hours || 0)}</td>
+                            <td>{formatCurrency(entry.rate || entry.hourlyRate || 0)}</td>
                             <td>{entry.billable ? '✓' : '✗'}</td>
-                            <td>{entry.billable ? formatCurrency(entry.hours * entry.hourlyRate) : '-'}</td>
-                            <td>{entry.description || '-'}</td>
+                            <td>{entry.billable ? formatCurrency((entry.duration || entry.hours || 0) * (entry.rate || entry.hourlyRate || 0)) : '-'}</td>
+                            <td>{entry.activity || entry.description || '-'}</td>
                             <td>
                               <button 
                                 className="btn-icon" 
@@ -469,6 +469,7 @@ function SagDetails() {
         <TimeEntryModal
           timeEntry={editingTimeEntry}
           defaultRate={defaultRate}
+          employees={employees}
           onClose={() => setTimeEntryModalOpen(false)}
           onSave={handleSaveTimeEntry}
         />

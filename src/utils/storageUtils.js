@@ -88,9 +88,10 @@ export const deleteFileFromStorage = async (storagePath) => {
  */
 export const saveFileMetadata = async (metadata) => {
   try {
-    const docRef = await addDoc(collection(db, 'projectFiles'), {
+    const docRef = await addDoc(collection(db, 'files'), {
       ...metadata,
-      uploadedAt: new Date().toISOString()
+      uploadedAt: new Date().toISOString(),
+      createdAt: new Date().toISOString()
     });
     
     return { success: true, fileId: docRef.id };
@@ -106,7 +107,7 @@ export const saveFileMetadata = async (metadata) => {
 export const getProjectFiles = async (sagsnummer) => {
   try {
     const q = query(
-      collection(db, 'projectFiles'),
+      collection(db, 'files'),
       where('sagsnummer', '==', sagsnummer)
     );
     
@@ -136,7 +137,7 @@ export const getFilesByCategory = (files, category) => {
  */
 export const deleteFileMetadata = async (fileId) => {
   try {
-    await deleteDoc(doc(db, 'projectFiles', fileId));
+    await deleteDoc(doc(db, 'files', fileId));
     return { success: true };
   } catch (error) {
     console.error('Firestore delete error:', error);
@@ -149,7 +150,7 @@ export const deleteFileMetadata = async (fileId) => {
  */
 export const updateFileMetadata = async (fileId, updates) => {
   try {
-    await updateDoc(doc(db, 'projectFiles', fileId), {
+    await updateDoc(doc(db, 'files', fileId), {
       ...updates,
       updatedAt: new Date().toISOString()
     });
@@ -182,6 +183,7 @@ export const uploadFile = async ({
   originalSize,
   compressedSize,
   isCompressed,
+  description = '',  // NEW: Added description parameter
   onProgress
 }) => {
   const fileId = generateFileId();
@@ -241,7 +243,7 @@ export const uploadFile = async ({
               thumbnailPath: thumbnailData?.thumbnailPath || null,
               uploadedBy,
               uploadedByUID,
-              description: '',
+              description: description.trim(),  // NEW: Include description in metadata
               tags: []
             };
             
@@ -252,7 +254,7 @@ export const uploadFile = async ({
               resolve({ 
                 success: true, 
                 fileId: result.fileId,
-                metadata: { ...metadata, id: result.fileId }
+                fileData: { ...metadata, id: result.fileId }
               });
             } else {
               reject(result);
