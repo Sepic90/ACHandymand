@@ -96,13 +96,13 @@ function generateEmployeePage(pdf, year, startMonthIndex, dates, employeeName, l
   
   yPosition += 6;
   
-  // Statement - normal
+  // Statement - updated text
   pdf.setFont('helvetica', 'normal');
   pdf.setFontSize(9);
-  pdf.text('Oversigt over arbejdstimer, SH og overarbejde (OA).', margin, yPosition);
+  pdf.text('Oversigt over arbejdstimer, sygdom, SH, FE, FF og overarbejde (OA).', margin, yPosition);
   yPosition += 4;
   
-  // Statement - bold red
+  // Moved delivery date text back to below overview text
   pdf.setFont('helvetica', 'bold');
   pdf.setTextColor(255, 0, 0);
   pdf.text('Afleveres d. 19 i hver måned.', margin, yPosition);
@@ -139,16 +139,16 @@ function generateEmployeePage(pdf, year, startMonthIndex, dates, employeeName, l
 function drawTable(pdf, x, y, width, dates) {
   const startY = y;
   
-  // Column definitions with exact headers
+  // Updated column widths as provided by user
   const columns = [
     { header: 'Dato', width: 12 },
     { header: 'Ugedag', width: 14 },
-    { header: 'Fra kl. / Til kl.', width: 32 },
-    { header: 'Total timer', width: 22 },
-    { header: 'Total timer\nminus frokost', width: 28 },
-    { header: 'Kundens navn / Nume client\nBy / Oras', width: 50 },
-    { header: 'Arb. timer', width: 22 },
-    { header: 'OA', width: 8 }
+    { header: 'Fra kl. / Til kl.', width: 22 },
+    { header: 'Total timer', width: 18 },
+    { header: 'Total timer\nminus frokost', width: 22 },
+    { header: 'Afvigelse / Bemærkning', width: 65 },
+    { header: 'Arb. timer', width: 16 },
+    { header: 'OA', width: 12 }
   ];
   
   // Calculate actual column widths to fit table width
@@ -168,14 +168,15 @@ function drawTable(pdf, x, y, width, dates) {
     // Draw header cell border
     pdf.rect(currentX, y, col.width, headerHeight);
     
-    // Draw header text (handle multi-line) - left-aligned with minimal padding
+    // Draw header text (handle multi-line) - CENTER-ALIGNED
     const lines = col.header.split('\n');
     const lineHeight = 3;
     const startLineY = y + 3; // Start 3mm from top (minimal padding)
     
     lines.forEach((line, lineIndex) => {
-      // Left-align with small padding
-      pdf.text(line, currentX + 1, startLineY + (lineIndex * lineHeight));
+      // Center-align
+      const centerX = currentX + col.width / 2;
+      pdf.text(line, centerX, startLineY + (lineIndex * lineHeight), { align: 'center' });
     });
     
     currentX += col.width;
@@ -207,13 +208,45 @@ function drawTable(pdf, x, y, width, dates) {
         if (dateInfo.isWeekend) {
           textColor = [255, 0, 0]; // Red for weekends
         }
+      } else if (colIndex === 2 && !dateInfo.isWeekend) {
+        // Fra kl. / Til kl. column - Pre-populate time ranges
+        // Monday to Thursday: 07:00-15:00, Friday: 07:00-14:30
+        if (dateInfo.weekday === 'Fredag') {
+          cellText = '07:00-14:30';
+        } else {
+          cellText = '07:00-15:00';
+        }
+      } else if (colIndex === 3 && !dateInfo.isWeekend) {
+        // Total timer column - Pre-populate total hours
+        // Monday to Thursday: 8, Friday: 7,5
+        if (dateInfo.weekday === 'Fredag') {
+          cellText = '7,5';
+        } else {
+          cellText = '8';
+        }
+      } else if (colIndex === 4 && !dateInfo.isWeekend) {
+        // Total timer minus frokost column - Pre-populate hours minus lunch
+        // Monday to Thursday: 7,5, Friday: 7
+        if (dateInfo.weekday === 'Fredag') {
+          cellText = '7';
+        } else {
+          cellText = '7,5';
+        }
+      } else if (colIndex === 6 && !dateInfo.isWeekend) {
+        // Arb. timer column - Pre-populate work hours
+        // Monday to Thursday: 7,5, Friday: 7
+        if (dateInfo.weekday === 'Fredag') {
+          cellText = '7';
+        } else {
+          cellText = '7,5';
+        }
       }
-      // Other columns are left empty for manual filling
       
       if (cellText) {
         pdf.setTextColor(...textColor);
-        // Left-align with small padding
-        pdf.text(cellText, currentX + 1, y + rowHeight / 2 + 1.5);
+        // Center-align all data cells
+        const centerX = currentX + col.width / 2;
+        pdf.text(cellText, centerX, y + rowHeight / 2 + 1.5, { align: 'center' });
         pdf.setTextColor(0, 0, 0);
       }
       
@@ -221,5 +254,30 @@ function drawTable(pdf, x, y, width, dates) {
     });
     
     y += rowHeight;
+  });
+  
+  // Fixed total row - only visible borders on columns F (index 5) and G (index 6)
+  currentX = x;
+  
+  columns.forEach((col, colIndex) => {
+    // Only draw borders for columns F and G
+    if (colIndex === 5 || colIndex === 6) {
+      pdf.rect(currentX, y, col.width, rowHeight);
+    }
+    
+    if (colIndex === 5) {
+      // Column F: "Total timer:" label - RIGHT-ALIGNED (exception to center alignment)
+      pdf.setFont('helvetica', 'bold');
+      const totalText = 'Total timer:';
+      const textWidth = pdf.getTextWidth(totalText);
+      // Right-align: position at right edge minus padding
+      pdf.text(totalText, currentX + col.width - textWidth - 1, y + rowHeight / 2 + 1.5);
+      pdf.setFont('helvetica', 'normal');
+    } else if (colIndex === 6) {
+      // Column G: empty space for manual entry of total hours
+      // Leave empty for pen entry
+    }
+    
+    currentX += col.width;
   });
 }
