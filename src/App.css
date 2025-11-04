@@ -3481,3 +3481,150 @@ body {
     grid-template-columns: 1fr;
   }
 }
+
+/* ============================================
+   MATERIALS CATALOG - ADD TO App.css
+   ============================================ */
+
+/* Materials Grid */
+.materials-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+  gap: 20px;
+}
+
+.material-card {
+  background: white;
+  border: 1px solid #e1e8ed;
+  border-radius: 8px;
+  overflow: hidden;
+  transition: all 0.2s;
+}
+
+.material-card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  transform: translateY(-2px);
+}
+
+.material-card-header {
+  background: #f8f9fa;
+  padding: 16px 20px;
+  border-bottom: 1px solid #e1e8ed;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.material-name {
+  font-size: 18px;
+  font-weight: 600;
+  color: #2c3e50;
+  margin: 0 0 8px 0;
+}
+
+.material-meta {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.material-category-badge {
+  display: inline-block;
+  padding: 4px 12px;
+  background: #e8f5e9;
+  color: #27ae60;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.material-unit-badge {
+  display: inline-block;
+  padding: 4px 12px;
+  background: #fff3e0;
+  color: #f57c00;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.material-card-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.material-card-body {
+  padding: 20px;
+}
+
+.material-info-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+}
+
+.material-info-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.material-info-label {
+  font-size: 11px;
+  color: #7f8c8d;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.material-info-value {
+  font-size: 14px;
+  color: #2c3e50;
+  word-break: break-word;
+}
+
+/* Material Modal */
+.material-modal {
+  max-width: 650px;
+}
+
+.material-modal .modal-form {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+/* Info Box (for last purchase info) */
+.info-box {
+  background: #f8f9fa;
+  border-left: 4px solid #3498db;
+  border-radius: 6px;
+  padding: 16px;
+  margin-top: 8px;
+}
+
+.info-box-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: #7f8c8d;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 8px;
+}
+
+.info-box-content {
+  font-size: 14px;
+  color: #2c3e50;
+  line-height: 1.6;
+}
+
+/* Responsive for Materials */
+@media (max-width: 768px) {
+  .materials-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .material-info-grid {
+    grid-template-columns: 1fr;
+  }
+}
