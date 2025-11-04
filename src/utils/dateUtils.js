@@ -45,6 +45,9 @@ export function generateDateRange(year, startMonthIndex) {
   
   // Generate all dates in the range
   while (currentDate <= endDate) {
+    // FIXED: Changed to DD/MM/YYYY format with slashes to match absenceUtils
+    const formattedDate = `${String(currentDate.getDate()).padStart(2, '0')}/${String(currentDate.getMonth() + 1).padStart(2, '0')}/${currentDate.getFullYear()}`;
+    
     dates.push({
       date: new Date(currentDate),
       dayOfMonth: currentDate.getDate(),
@@ -52,7 +55,7 @@ export function generateDateRange(year, startMonthIndex) {
       year: currentDate.getFullYear(),
       weekday: getWeekdayName(currentDate),
       isWeekend: isWeekend(currentDate),
-      formattedDate: `${String(currentDate.getDate()).padStart(2, '0')}.${String(currentDate.getMonth() + 1).padStart(2, '0')}`
+      formattedDate: formattedDate
     });
     
     // Move to next day

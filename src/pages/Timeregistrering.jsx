@@ -3,8 +3,12 @@ import { collection, getDocs } from 'firebase/firestore';
 import { db } from '../services/firebase';
 import { generateMonthPairs } from '../utils/dateUtils';
 import { generateTimesheetPDF } from '../utils/pdfGenerator';
+import { useNotification } from '../utils/notificationUtils';
+import CreateAbsenceModal from '../components/CreateAbsenceModal';
+import ViewAbsenceModal from '../components/ViewAbsenceModal';
 
 function Timeregistrering() {
+  const { showError, showWarning } = useNotification();
   const [year, setYear] = useState(new Date().getFullYear());
   const [monthPair, setMonthPair] = useState(new Date().getMonth());
   const [allEmployees, setAllEmployees] = useState(false);
@@ -13,10 +17,13 @@ function Timeregistrering() {
   const [loading, setLoading] = useState(false);
   const [generating, setGenerating] = useState(false);
 
+  const [showCreateAbsence, setShowCreateAbsence] = useState(false);
+  const [showViewAbsence, setShowViewAbsence] = useState(false);
+  const [selectedEmployeeForAbsence, setSelectedEmployeeForAbsence] = useState(null);
+
   const monthPairs = generateMonthPairs();
   const years = Array.from({ length: 10 }, (_, i) => new Date().getFullYear() - 2 + i);
 
-  // Load employees from Firestore
   useEffect(() => {
     loadEmployees();
   }, []);
@@ -30,7 +37,6 @@ function Timeregistrering() {
         employeeList.push({ id: doc.id, ...doc.data() });
       });
       
-      // Sort by name
       employeeList.sort((a, b) => a.name.localeCompare(b.name));
       
       setEmployees(employeeList);
@@ -39,6 +45,7 @@ function Timeregistrering() {
       }
     } catch (error) {
       console.error('Error loading employees:', error);
+      showError('Fejl ved indlæsning af medarbejdere.');
     } finally {
       setLoading(false);
     }
@@ -46,7 +53,7 @@ function Timeregistrering() {
 
   const handleGeneratePDF = async () => {
     if (!allEmployees && !selectedEmployee) {
-      alert('Vælg venligst en medarbejder.');
+      showWarning('Vælg venligst en medarbejder.');
       return;
     }
 
@@ -57,13 +64,27 @@ function Timeregistrering() {
         ? employees.map(emp => emp.name)
         : [selectedEmployee];
       
-      await generateTimesheetPDF(year, monthPair, employeeNames, allEmployees);
+      await generateTimesheetPDF(year, monthPair, employeeNames, allEmployees, employees);
     } catch (error) {
       console.error('Error generating PDF:', error);
-      alert('Der opstod en fejl ved generering af PDF. Prøv igen.');
+      showError('Der opstod en fejl ved generering af PDF. Prøv igen.');
     } finally {
       setGenerating(false);
     }
+  };
+
+  const handleCreateAbsence = (employee) => {
+    setSelectedEmployeeForAbsence(employee);
+    setShowCreateAbsence(true);
+  };
+
+  const handleViewAbsence = (employee) => {
+    setSelectedEmployeeForAbsence(employee);
+    setShowViewAbsence(true);
+  };
+
+  const handleAbsenceSuccess = () => {
+    // Refresh is handled in the modals
   };
 
   return (
@@ -74,6 +95,7 @@ function Timeregistrering() {
       </div>
 
       <div className="content-card">
+        <h3 style={{ marginBottom: '20px' }}>Generér PDF</h3>
         <div className="timesheet-form">
           <div className="form-section">
             <label htmlFor="year">Vælg år</label>
@@ -125,40 +147,82 @@ function Timeregistrering() {
                 disabled={allEmployees || employees.length === 0}
               >
                 {employees.length === 0 ? (
-                  <option value="">Ingen medarbejdere tilgængelige</option>
+                  <option value="">Ingen medarbejdere</option>
                 ) : (
                   employees.map(emp => (
-                    <option key={emp.id} value={emp.name}>
-                      {emp.name}
-                    </option>
+                    <option key={emp.id} value={emp.name}>{emp.name}</option>
                   ))
                 )}
               </select>
             )}
+
+            {employees.length === 0 && (
+              <p className="no-employees-text">
+                Tilføj medarbejdere i Indstillinger først
+              </p>
+            )}
           </div>
 
-          {generating && (
-            <div className="loading-indicator">
-              <div className="spinner"></div>
-              <span>Genererer dokument...</span>
-            </div>
-          )}
-
-          <button
+          <button 
             className="btn-generate"
             onClick={handleGeneratePDF}
             disabled={generating || employees.length === 0}
           >
-            Generér og download dokument
+            {generating ? 'Genererer...' : 'Generér PDF'}
           </button>
-
-          {employees.length === 0 && !loading && (
-            <p style={{ color: '#e74c3c', fontSize: '14px', marginTop: '10px' }}>
-              Ingen medarbejdere fundet. Tilføj medarbejdere i Indstillinger først.
-            </p>
-          )}
         </div>
       </div>
+
+      <div className="content-card" style={{ marginTop: '30px' }}>
+        <h3 style={{ marginBottom: '20px' }}>Fravær og sygdom</h3>
+        
+        {loading ? (
+          <p>Indlæser medarbejdere...</p>
+        ) : employees.length === 0 ? (
+          <p className="no-employees-text">
+            Tilføj medarbejdere i Indstillinger først
+          </p>
+        ) : (
+          <div className="absence-employee-list">
+            {employees.map(employee => (
+              <div key={employee.id} className="absence-employee-row">
+                <span className="absence-employee-name">{employee.name}</span>
+                <div className="absence-employee-actions">
+                  <button 
+                    className="btn-primary btn-small"
+                    onClick={() => handleCreateAbsence(employee)}
+                  >
+                    Opret fravær
+                  </button>
+                  <button 
+                    className="btn-secondary btn-small"
+                    onClick={() => handleViewAbsence(employee)}
+                  >
+                    Se / rediger fravær
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {showCreateAbsence && selectedEmployeeForAbsence && (
+        <CreateAbsenceModal
+          employee={selectedEmployeeForAbsence}
+          employees={employees}
+          onClose={() => setShowCreateAbsence(false)}
+          onSuccess={handleAbsenceSuccess}
+        />
+      )}
+
+      {showViewAbsence && selectedEmployeeForAbsence && (
+        <ViewAbsenceModal
+          employee={selectedEmployeeForAbsence}
+          onClose={() => setShowViewAbsence(false)}
+          onSuccess={handleAbsenceSuccess}
+        />
+      )}
     </div>
   );
 }

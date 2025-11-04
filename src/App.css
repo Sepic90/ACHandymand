@@ -3833,3 +3833,376 @@ body {
   transform: none;
   box-shadow: none;
 }
+
+/* ============================================
+   ABSENCE MANAGEMENT STYLES
+   Add these to your existing App.css file
+   ============================================ */
+
+/* Absence Employee List */
+.absence-employee-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.absence-employee-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  border: 1px solid #e1e8ed;
+  transition: all 0.2s;
+}
+
+.absence-employee-row:hover {
+  background: #ecf0f1;
+  border-color: #bdc3c7;
+}
+
+.absence-employee-name {
+  font-size: 16px;
+  font-weight: 600;
+  color: #2c3e50;
+}
+
+.absence-employee-actions {
+  display: flex;
+  gap: 10px;
+}
+
+/* Absence Tabs */
+.absence-tabs {
+  display: flex;
+  gap: 0;
+  border-bottom: 2px solid #e1e8ed;
+  margin-bottom: 24px;
+}
+
+.absence-tab {
+  flex: 1;
+  padding: 14px 20px;
+  background: transparent;
+  border: none;
+  border-bottom: 3px solid transparent;
+  font-size: 14px;
+  font-weight: 600;
+  color: #7f8c8d;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.absence-tab:hover {
+  color: #2c3e50;
+  background: #f8f9fa;
+}
+
+.absence-tab.active {
+  color: #3498db;
+  border-bottom-color: #3498db;
+  background: #ebf5fb;
+}
+
+/* Calendar Styles */
+.calendar-navigation {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding: 16px;
+  background: #f8f9fa;
+  border-radius: 8px;
+}
+
+.calendar-navigation h3 {
+  font-size: 18px;
+  color: #2c3e50;
+  margin: 0;
+}
+
+.calendar-container {
+  margin-bottom: 24px;
+}
+
+.calendar-header {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+  margin-bottom: 8px;
+}
+
+.calendar-header-day {
+  text-align: center;
+  font-size: 12px;
+  font-weight: 600;
+  color: #7f8c8d;
+  padding: 8px;
+  text-transform: uppercase;
+}
+
+.calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+}
+
+.calendar-day {
+  aspect-ratio: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 8px;
+  background: white;
+  border: 1px solid #e1e8ed;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+  position: relative;
+}
+
+.calendar-day:hover {
+  background: #ebf5fb;
+  border-color: #3498db;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(52, 152, 219, 0.15);
+}
+
+.calendar-day.empty {
+  background: transparent;
+  border: none;
+  cursor: default;
+}
+
+.calendar-day.empty:hover {
+  transform: none;
+  box-shadow: none;
+}
+
+.calendar-day.has-absence {
+  background: #fff3e0;
+  border-color: #f57c00;
+}
+
+.calendar-day.has-absence:hover {
+  background: #ffe0b2;
+}
+
+.calendar-day-number {
+  font-size: 14px;
+  font-weight: 600;
+  color: #2c3e50;
+}
+
+.calendar-absence-indicator {
+  position: absolute;
+  bottom: 4px;
+  font-size: 10px;
+  font-weight: 600;
+  color: #f57c00;
+  background: #fff;
+  padding: 2px 4px;
+  border-radius: 3px;
+}
+
+/* Absence Details */
+.absence-details {
+  margin-top: 24px;
+  padding: 20px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  border: 1px solid #e1e8ed;
+}
+
+.absence-details h4 {
+  margin: 0 0 16px 0;
+  color: #2c3e50;
+  font-size: 16px;
+}
+
+.detail-row {
+  margin-bottom: 12px;
+  font-size: 14px;
+  color: #2c3e50;
+}
+
+.detail-row strong {
+  display: inline-block;
+  min-width: 120px;
+  color: #7f8c8d;
+  font-weight: 600;
+}
+
+.detail-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid #e1e8ed;
+}
+
+/* Modal Large Variant */
+.modal-large {
+  max-width: 800px;
+}
+
+/* Responsive Design for Absence Components */
+@media (max-width: 768px) {
+  .absence-employee-row {
+    flex-direction: column;
+    gap: 12px;
+    align-items: flex-start;
+  }
+
+  .absence-employee-actions {
+    width: 100%;
+  }
+
+  .absence-employee-actions button {
+    flex: 1;
+  }
+
+  .absence-tabs {
+    flex-direction: column;
+  }
+
+  .absence-tab {
+    border-bottom: 1px solid #e1e8ed;
+    border-left: 3px solid transparent;
+  }
+
+  .absence-tab.active {
+    border-bottom: 1px solid #e1e8ed;
+    border-left-color: #3498db;
+  }
+
+  .calendar-navigation {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .calendar-navigation h3 {
+    order: -1;
+  }
+
+  .calendar-grid {
+    gap: 2px;
+  }
+
+  .calendar-day {
+    padding: 4px;
+  }
+
+  .calendar-day-number {
+    font-size: 12px;
+  }
+
+  .calendar-absence-indicator {
+    font-size: 8px;
+    padding: 1px 2px;
+  }
+
+  .detail-actions {
+    flex-direction: column;
+  }
+
+  .detail-actions button {
+    width: 100%;
+  }
+}
+
+/* Ensure existing styles work with new components */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  animation: fadeIn 0.2s;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.modal-content {
+  background: white;
+  border-radius: 10px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+  max-width: 600px;
+  width: 90%;
+  max-height: 90vh;
+  overflow-y: auto;
+  animation: slideUp 0.3s;
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 24px 24px 16px 24px;
+  border-bottom: 1px solid #e1e8ed;
+}
+
+.modal-header h2 {
+  margin: 0;
+  font-size: 20px;
+  color: #2c3e50;
+}
+
+.modal-close {
+  background: none;
+  border: none;
+  font-size: 28px;
+  color: #7f8c8d;
+  cursor: pointer;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: all 0.2s;
+}
+
+.modal-close:hover {
+  background: #f8f9fa;
+  color: #2c3e50;
+}
+
+.modal-body {
+  padding: 24px;
+}
+
+.modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 16px 24px;
+  border-top: 1px solid #e1e8ed;
+  background: #f8f9fa;
+  border-radius: 0 0 10px 10px;
+}
