@@ -8,7 +8,7 @@ achandymand-app/
 ```
 
 ## 🔥 Firebase Project
-- **Project ID**: achandymand-9b1b7
+- **Project ID**: achandymand-145da
 - **Console**: https://console.firebase.google.com/
 
 ## ⚡ Almindelige Kommandoer
@@ -85,7 +85,6 @@ Database adgangskontrol
 **Sikkerhedsregel**: Kun authenticated users
 
 ## 🎨 Logo Placering
-
 ```
 public/logo_white.png  (sidebar)
 public/logo_black.png  (PDF)
@@ -131,7 +130,7 @@ http://localhost:5173/
 
 ### Production (efter deploy)
 ```
-https://achandymand-9b1b7.web.app/
+https://achandymand-145da.web.app/
 ```
 
 ## 📱 Sider i App
@@ -182,24 +181,11 @@ https://achandymand-9b1b7.web.app/
    - Terminal: check for error messages
 
 3. **Firebase Console**:
-   - Check Authentication users
-   - Check Firestore data
-   - Check sikkerhedsregler
+   - https://console.firebase.google.com/project/achandymand-145da
 
-## 💾 Backup Reminder
+## 💡 Tips
 
-**Husk at backup**:
-- Firebase credentials
-- Admin login info
-- Custom code ændringer
-
-## 🔒 Sikkerhed
-
-- ❌ Commit ALDRIG Firebase credentials til Git
-- ✅ Brug .gitignore (allerede sat op)
-- ✅ Sikre passwords til admin brugere
-- ✅ Review Firestore rules før production
-
----
-
-**Print eller gem denne side** for hurtig reference! 📌
+- Gem ofte under udvikling
+- Test ændringer lokalt før deploy
+- Check Firebase Console for fejl
+- Brug git til version control
