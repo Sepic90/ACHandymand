@@ -51,6 +51,12 @@ function Layout() {
             Sager
           </NavLink>
           <NavLink
+            to="/materialer"
+            className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
+          >
+            Materialer
+          </NavLink>
+          <NavLink
             to="/timeregistrering"
             className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
           >

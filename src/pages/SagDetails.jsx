@@ -5,12 +5,24 @@ import { db } from '../services/firebase';
 import ProjectStatusBadge from '../components/ProjectStatusBadge';
 import ProjectModal from '../components/ProjectModal';
 import TimeEntryModal from '../components/TimeEntryModal';
+import MaterialPurchaseModal from '../components/MaterialPurchaseModal';
 import { 
   getProjectTimeEntries, 
   calculateTotalHours, 
   calculateBillableHours, 
   calculateTotalValue 
 } from '../utils/projectUtils';
+import { 
+  getCaseMaterialPurchases,
+  calculateTotalPurchaseCost,
+  calculateTotalSellingPrice,
+  calculateTotalMargin,
+  createMaterialPurchase,
+  updateMaterialPurchase,
+  deleteMaterialPurchase,
+  getSuppliers,
+  getMaterials
+} from '../utils/materialUtils';
 import { formatCurrency, formatDate, formatHours, createMapsUrl, formatPhone } from '../utils/formatUtils';
 import FilesTab from '../components/files/FilesTab';
 
@@ -20,17 +32,25 @@ function SagDetails() {
   
   const [project, setProject] = useState(null);
   const [timeEntries, setTimeEntries] = useState([]);
+  const [materialPurchases, setMaterialPurchases] = useState([]);
+  const [suppliers, setSuppliers] = useState([]);
+  const [materials, setMaterials] = useState([]);
   const [employees, setEmployees] = useState([]);
   const [loading, setLoading] = useState(true);
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [timeEntryModalOpen, setTimeEntryModalOpen] = useState(false);
+  const [materialModalOpen, setMaterialModalOpen] = useState(false);
   const [editingTimeEntry, setEditingTimeEntry] = useState(null);
+  const [editingMaterialPurchase, setEditingMaterialPurchase] = useState(null);
   const [defaultRate, setDefaultRate] = useState(450);
   const [activeTab, setActiveTab] = useState('overblik');
 
   useEffect(() => {
     loadProject();
     loadTimeEntries();
+    loadMaterialPurchases();
+    loadSuppliers();
+    loadMaterials();
     loadEmployees();
   }, [id]);
 
@@ -57,6 +77,39 @@ function SagDetails() {
       setTimeEntries(entries);
     } catch (error) {
       console.error('Error loading time entries:', error);
+    }
+  };
+
+  const loadMaterialPurchases = async () => {
+    try {
+      const result = await getCaseMaterialPurchases(id);
+      if (result.success) {
+        setMaterialPurchases(result.purchases);
+      }
+    } catch (error) {
+      console.error('Error loading material purchases:', error);
+    }
+  };
+
+  const loadSuppliers = async () => {
+    try {
+      const result = await getSuppliers();
+      if (result.success) {
+        setSuppliers(result.suppliers);
+      }
+    } catch (error) {
+      console.error('Error loading suppliers:', error);
+    }
+  };
+
+  const loadMaterials = async () => {
+    try {
+      const result = await getMaterials();
+      if (result.success) {
+        setMaterials(result.materials);
+      }
+    } catch (error) {
+      console.error('Error loading materials:', error);
     }
   };
 
@@ -151,6 +204,57 @@ function SagDetails() {
     }
   };
 
+  const handleAddMaterial = () => {
+    setEditingMaterialPurchase(null);
+    setMaterialModalOpen(true);
+  };
+
+  const handleEditMaterial = (purchase) => {
+    setEditingMaterialPurchase(purchase);
+    setMaterialModalOpen(true);
+  };
+
+  const handleDeleteMaterial = async (purchase) => {
+    if (window.confirm('Er du sikker på, at du vil slette dette materiale?')) {
+      try {
+        const result = await deleteMaterialPurchase(purchase.id);
+        if (result.success) {
+          await loadMaterialPurchases();
+        } else {
+          alert('Der opstod en fejl ved sletning af materiale.');
+        }
+      } catch (error) {
+        console.error('Error deleting material:', error);
+        alert('Der opstod en fejl ved sletning af materiale.');
+      }
+    }
+  };
+
+  const handleSaveMaterial = async (formData) => {
+    try {
+      if (editingMaterialPurchase) {
+        const result = await updateMaterialPurchase(editingMaterialPurchase.id, formData);
+        if (result.success) {
+          setMaterialModalOpen(false);
+          await loadMaterialPurchases();
+        } else {
+          alert('Der opstod en fejl ved opdatering af materiale.');
+        }
+      } else {
+        const result = await createMaterialPurchase(formData);
+        if (result.success) {
+          setMaterialModalOpen(false);
+          await loadMaterialPurchases();
+        } else {
+          alert('Der opstod en fejl ved tilføjelse af materiale.');
+        }
+      }
+    } catch (error) {
+      console.error('Error saving material:', error);
+      alert('Der opstod en fejl ved gemning af materiale.');
+    }
+  };
+
   const getTypeLabel = (type) => {
     return type === 'fixed-price' ? 'Fast Pris' : 'Tid & Materiale';
   };
@@ -172,6 +276,10 @@ function SagDetails() {
   const totalHours = calculateTotalHours(timeEntries);
   const billableHours = calculateBillableHours(timeEntries);
   const totalValue = calculateTotalValue(timeEntries);
+  
+  const totalPurchaseCost = calculateTotalPurchaseCost(materialPurchases);
+  const totalSellingPrice = calculateTotalSellingPrice(materialPurchases);
+  const totalMaterialMargin = calculateTotalMargin(materialPurchases);
 
   return (
     <div>
@@ -183,7 +291,6 @@ function SagDetails() {
         <p>Sagsnr. {project.projectNumber}</p>
       </div>
 
-      {/* Tab Navigation */}
       <div className="sag-tabs">
         <button 
           className={`sag-tab ${activeTab === 'overblik' ? 'active' : ''}`}
@@ -198,6 +305,12 @@ function SagDetails() {
           Timeregistrering
         </button>
         <button 
+          className={`sag-tab ${activeTab === 'materialer' ? 'active' : ''}`}
+          onClick={() => setActiveTab('materialer')}
+        >
+          Materialer
+        </button>
+        <button 
           className={`sag-tab ${activeTab === 'filer' ? 'active' : ''}`}
           onClick={() => setActiveTab('filer')}
         >
@@ -205,12 +318,10 @@ function SagDetails() {
         </button>
       </div>
 
-      {/* Tab Content */}
       <div className="sag-tab-content">
         {activeTab === 'overblik' && (
           <div className="overblik-tab">
-            <div className="sag-grid-4col">
-              {/* Project Information Card */}
+            <div className="sag-grid">
               <div className="sag-card">
                 <div className="card-header">
                   <h2>Sagsoplysninger</h2>
@@ -240,13 +351,12 @@ function SagDetails() {
                     </div>
                     <div className="info-item full-width">
                       <span className="info-label">Beskrivelse:</span>
-                      <p className="info-value">{project.description || 'Ingen beskrivelse'}</p>
+                      <p className="info-description">{project.description || 'Ingen beskrivelse'}</p>
                     </div>
                   </div>
                 </div>
               </div>
 
-              {/* Customer Information Card */}
               <div className="sag-card">
                 <div className="card-header">
                   <h2>Kundeoplysninger</h2>
@@ -255,7 +365,7 @@ function SagDetails() {
                   <div className="info-grid">
                     <div className="info-item full-width">
                       <span className="info-label">Navn:</span>
-                      <span className="info-value">{project.customerName}</span>
+                      <span className="info-value">{project.customerName || 'Ikke angivet'}</span>
                     </div>
                     {project.customerPhone && (
                       <div className="info-item">
@@ -290,36 +400,35 @@ function SagDetails() {
                 </div>
               </div>
 
-              {/* Time Statistics Card */}
               <div className="sag-card">
                 <div className="card-header">
-                  <h2>Timestatistik</h2>
+                  <h2>Timer & Økonomi</h2>
                 </div>
                 <div className="card-body">
-                  <div className="stats-grid-vertical">
+                  <div className="stats-grid">
                     <div className="stat-item">
                       <div className="stat-value">{formatHours(totalHours)}</div>
                       <div className="stat-label">Totale timer</div>
                     </div>
                     <div className="stat-item">
                       <div className="stat-value">{formatHours(billableHours)}</div>
-                      <div className="stat-label">Fakturerbare timer</div>
+                      <div className="stat-label">Fakturerbare</div>
                     </div>
                     <div className="stat-item">
                       <div className="stat-value">{formatCurrency(totalValue)}</div>
-                      <div className="stat-label">Total værdi</div>
+                      <div className="stat-label">Værdi (timer)</div>
                     </div>
                   </div>
 
-                  {project.type === 'fixed-price' && project.fixedPrice > 0 && (
+                  {project.type === 'fixed-price' && project.fixedPrice && (
                     <div className="progress-section">
                       <div className="progress-label">
-                        <span>Forbrug</span>
+                        <span>Forbrug af fast pris</span>
                         <span>{Math.round((totalValue / project.fixedPrice) * 100)}%</span>
                       </div>
-                      <div className="progress-bar-container">
+                      <div className="progress-bar">
                         <div 
-                          className="progress-bar"
+                          className="progress-fill"
                           style={{ 
                             width: `${Math.min((totalValue / project.fixedPrice) * 100, 100)}%`,
                             background: totalValue > project.fixedPrice ? '#e74c3c' : '#27ae60'
@@ -331,7 +440,34 @@ function SagDetails() {
                 </div>
               </div>
 
-              {/* Recent Activity Card */}
+              <div className="sag-card">
+                <div className="card-header">
+                  <h2>Materialer</h2>
+                </div>
+                <div className="card-body">
+                  <div className="stats-grid">
+                    <div className="stat-item">
+                      <div className="stat-value">{materialPurchases.length}</div>
+                      <div className="stat-label">Indkøb</div>
+                    </div>
+                    <div className="stat-item">
+                      <div className="stat-value">{formatCurrency(totalPurchaseCost)}</div>
+                      <div className="stat-label">Indkøbspris</div>
+                    </div>
+                    <div className="stat-item">
+                      <div className="stat-value">{formatCurrency(totalSellingPrice)}</div>
+                      <div className="stat-label">Salgspris</div>
+                    </div>
+                    <div className="stat-item">
+                      <div className="stat-value" style={{ color: totalMaterialMargin >= 0 ? '#27ae60' : '#e74c3c' }}>
+                        {formatCurrency(totalMaterialMargin)}
+                      </div>
+                      <div className="stat-label">Avance</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
               <div className="sag-card">
                 <div className="card-header">
                   <h2>Seneste timer</h2>
@@ -372,7 +508,7 @@ function SagDetails() {
                   <div className="empty-state">
                     <p>Ingen timeregistreringer endnu</p>
                     <button className="btn-primary" onClick={handleAddTimeEntry}>
-                      Tilføj første timeregistrering
+                      + Tilføj første timeregistrering
                     </button>
                   </div>
                 ) : (
@@ -398,10 +534,10 @@ function SagDetails() {
                           <th>Dato</th>
                           <th>Medarbejder</th>
                           <th>Timer</th>
-                          <th>Timepris</th>
-                          <th>Fakturerbar</th>
+                          <th>Timesats</th>
+                          <th>Fakt.</th>
                           <th>Værdi</th>
-                          <th>Beskrivelse</th>
+                          <th>Aktivitet</th>
                           <th>Handlinger</th>
                         </tr>
                       </thead>
@@ -442,6 +578,100 @@ function SagDetails() {
           </div>
         )}
 
+        {activeTab === 'materialer' && (
+          <div className="materialer-tab">
+            <div className="sag-card">
+              <div className="card-header">
+                <h2>Materialer</h2>
+                <button className="btn-primary" onClick={handleAddMaterial}>
+                  + Tilføj materiale
+                </button>
+              </div>
+              <div className="card-body">
+                {materialPurchases.length === 0 ? (
+                  <div className="empty-state">
+                    <p>Ingen materialer registreret endnu</p>
+                    <button className="btn-primary" onClick={handleAddMaterial}>
+                      + Tilføj første materiale
+                    </button>
+                  </div>
+                ) : (
+                  <>
+                    <div className="time-summary">
+                      <div className="summary-item">
+                        <span className="summary-label">Antal indkøb:</span>
+                        <span className="summary-value">{materialPurchases.length}</span>
+                      </div>
+                      <div className="summary-item">
+                        <span className="summary-label">Total indkøbspris:</span>
+                        <span className="summary-value">{formatCurrency(totalPurchaseCost)}</span>
+                      </div>
+                      <div className="summary-item">
+                        <span className="summary-label">Total salgspris:</span>
+                        <span className="summary-value">{formatCurrency(totalSellingPrice)}</span>
+                      </div>
+                      <div className="summary-item">
+                        <span className="summary-label">Total avance:</span>
+                        <span className="summary-value" style={{ color: totalMaterialMargin >= 0 ? '#27ae60' : '#e74c3c' }}>
+                          {formatCurrency(totalMaterialMargin)}
+                        </span>
+                      </div>
+                    </div>
+
+                    <table className="time-entries-table">
+                      <thead>
+                        <tr>
+                          <th>Dato</th>
+                          <th>Materiale</th>
+                          <th>Antal</th>
+                          <th>Kategori</th>
+                          <th>Leverandør</th>
+                          <th>Indkøbspris</th>
+                          <th>Salgspris</th>
+                          <th>Avance</th>
+                          <th>Handlinger</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {materialPurchases.map((purchase) => (
+                          <tr key={purchase.id}>
+                            <td>{formatDate(purchase.date)}</td>
+                            <td>{purchase.materialName}</td>
+                            <td>{purchase.quantity} {purchase.unit}</td>
+                            <td>{purchase.category}</td>
+                            <td>{purchase.supplierName}</td>
+                            <td>{formatCurrency(purchase.purchasePrice)}</td>
+                            <td>{formatCurrency(purchase.sellingPrice)}</td>
+                            <td style={{ color: purchase.marginKr >= 0 ? '#27ae60' : '#e74c3c' }}>
+                              {formatCurrency(purchase.marginKr)}
+                            </td>
+                            <td>
+                              <button 
+                                className="btn-icon" 
+                                onClick={() => handleEditMaterial(purchase)}
+                                title="Redigér"
+                              >
+                                ✏️
+                              </button>
+                              <button 
+                                className="btn-icon" 
+                                onClick={() => handleDeleteMaterial(purchase)}
+                                title="Slet"
+                              >
+                                🗑️
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
         {activeTab === 'filer' && (
           <FilesTab 
             project={project} 
@@ -466,6 +696,17 @@ function SagDetails() {
           employees={employees}
           onClose={() => setTimeEntryModalOpen(false)}
           onSave={handleSaveTimeEntry}
+        />
+      )}
+
+      {materialModalOpen && (
+        <MaterialPurchaseModal
+          purchase={editingMaterialPurchase}
+          project={project}
+          suppliers={suppliers}
+          materials={materials}
+          onClose={() => setMaterialModalOpen(false)}
+          onSave={handleSaveMaterial}
         />
       )}
     </div>

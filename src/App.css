@@ -3256,3 +3256,228 @@ body {
   color: #27ae60;
   font-weight: 600;
 }
+
+/* ============================================
+   MATERIAL PURCHASE MODAL
+   ============================================ */
+
+.material-purchase-modal {
+  max-width: 650px;
+}
+
+.material-purchase-modal .modal-form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 16px;
+}
+
+.material-purchase-modal select {
+  padding: 12px 15px;
+  border: 2px solid #e0e0e0;
+  border-radius: 6px;
+  font-size: 15px;
+  transition: all 0.2s;
+  font-family: inherit;
+  background-color: white;
+  cursor: pointer;
+}
+
+.material-purchase-modal select:focus {
+  outline: none;
+  border-color: #3498db;
+  box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+}
+
+@media (max-width: 768px) {
+  .form-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ============================================
+   MATERIAL PURCHASE MODAL - ADD TO App.css
+   ============================================ */
+
+.material-purchase-modal {
+  max-width: 650px;
+}
+
+.material-purchase-modal .modal-form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 16px;
+}
+
+.material-purchase-modal select {
+  padding: 12px 15px;
+  border: 2px solid #e0e0e0;
+  border-radius: 6px;
+  font-size: 15px;
+  transition: all 0.2s;
+  font-family: inherit;
+  background-color: white;
+  cursor: pointer;
+}
+
+.material-purchase-modal select:focus {
+  outline: none;
+  border-color: #3498db;
+  box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+}
+
+@media (max-width: 768px) {
+  .form-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ============================================
+   MATERIALER MODULE - ADD TO App.css
+   ============================================ */
+
+/* Suppliers Grid */
+.suppliers-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+  gap: 20px;
+}
+
+.supplier-card {
+  background: white;
+  border: 1px solid #e1e8ed;
+  border-radius: 8px;
+  overflow: hidden;
+  transition: all 0.2s;
+}
+
+.supplier-card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  transform: translateY(-2px);
+}
+
+.supplier-card-header {
+  background: #f8f9fa;
+  padding: 16px 20px;
+  border-bottom: 1px solid #e1e8ed;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.supplier-name {
+  font-size: 18px;
+  font-weight: 600;
+  color: #2c3e50;
+  margin: 0 0 8px 0;
+}
+
+.supplier-type-badge {
+  display: inline-block;
+  padding: 4px 12px;
+  background: #ebf5fb;
+  color: #3498db;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.supplier-card-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.supplier-card-body {
+  padding: 20px;
+}
+
+.supplier-info-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+}
+
+.supplier-info-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.supplier-info-item.full-width {
+  grid-column: 1 / -1;
+}
+
+.supplier-info-label {
+  font-size: 11px;
+  color: #7f8c8d;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.supplier-info-value {
+  font-size: 14px;
+  color: #2c3e50;
+  word-break: break-word;
+}
+
+.supplier-info-link {
+  font-size: 14px;
+  color: #3498db;
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+.supplier-info-link:hover {
+  color: #2980b9;
+  text-decoration: underline;
+}
+
+/* Supplier Modal */
+.supplier-modal {
+  max-width: 700px;
+  max-height: 85vh;
+}
+
+.supplier-modal .modal-form {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.form-section {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.form-section-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #2c3e50;
+  margin: 0;
+  padding-bottom: 12px;
+  border-bottom: 2px solid #ecf0f1;
+}
+
+/* Responsive for Suppliers */
+@media (max-width: 768px) {
+  .suppliers-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .supplier-info-grid {
+    grid-template-columns: 1fr;
+  }
+}
