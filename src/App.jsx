@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { NotificationProvider } from './utils/notificationUtils.jsx';
 import ToastContainer from './components/notifications/ToastContainer';
 import ConfirmDialog from './components/notifications/ConfirmDialog';
+import CriticalConfirmDialog from './components/notifications/CriticalConfirmDialog';
 import Login from './pages/Login';
 import Timeregistrering from './pages/Timeregistrering';
 import Indstillinger from './pages/Indstillinger';
@@ -42,6 +43,7 @@ function App() {
       
       <ToastContainer />
       <ConfirmDialog />
+      <CriticalConfirmDialog />
     </NotificationProvider>
   );
 }

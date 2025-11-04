@@ -10,7 +10,7 @@ import { useNotification } from '../utils/notificationUtils';
 
 function Sager() {
   const navigate = useNavigate();
-  const { showSuccess, showError, showConfirm } = useNotification();
+  const { showSuccess, showError, showCriticalConfirm } = useNotification();
 
   const [projects, setProjects] = useState([]);
   const [filteredProjects, setFilteredProjects] = useState([]);
@@ -132,10 +132,15 @@ function Sager() {
   const handleDeleteProject = async (e, project) => {
     e.stopPropagation();
     
-    const confirmed = await showConfirm({
+    // Get hours for this project to show in warning
+    const hours = projectHours[project.id] || 0;
+    
+    const confirmed = await showCriticalConfirm({
       title: 'Slet sag?',
-      message: `Er du sikker på at du vil slette "${project.name}"?`,
-      confirmText: 'Ja, slet',
+      message: 'Dette vil permanent slette sagen og alle tilknyttede data (timer, materialer, filer).',
+      itemName: `${project.projectNumber} - ${project.name}`,
+      warningText: hours > 0 ? `Der er registreret ${hours} timer på denne sag` : null,
+      confirmText: 'Slet Permanent',
       cancelText: 'Annuller'
     });
 

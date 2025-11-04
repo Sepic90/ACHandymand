@@ -21,6 +21,7 @@ export const useNotification = () => {
 export const NotificationProvider = ({ children }) => {
   const [toasts, setToasts] = useState([]);
   const [confirmDialog, setConfirmDialog] = useState(null);
+  const [criticalConfirmDialog, setCriticalConfirmDialog] = useState(null);
 
   // Add toast notification
   const showToast = useCallback((message, type = 'info') => {
@@ -62,7 +63,7 @@ export const NotificationProvider = ({ children }) => {
     return showToast(message, 'warning');
   }, [showToast]);
 
-  // Show confirmation dialog
+  // Show standard confirmation dialog
   const showConfirm = useCallback((config) => {
     return new Promise((resolve) => {
       setConfirmDialog({
@@ -79,6 +80,23 @@ export const NotificationProvider = ({ children }) => {
     });
   }, []);
 
+  // Show CRITICAL confirmation dialog (requires typing "Slet")
+  const showCriticalConfirm = useCallback((config) => {
+    return new Promise((resolve) => {
+      setCriticalConfirmDialog({
+        ...config,
+        onConfirm: () => {
+          setCriticalConfirmDialog(null);
+          resolve(true);
+        },
+        onCancel: () => {
+          setCriticalConfirmDialog(null);
+          resolve(false);
+        }
+      });
+    });
+  }, []);
+
   const value = {
     toasts,
     showToast,
@@ -88,7 +106,9 @@ export const NotificationProvider = ({ children }) => {
     showInfo,
     showWarning,
     showConfirm,
-    confirmDialog
+    confirmDialog,
+    showCriticalConfirm,
+    criticalConfirmDialog
   };
 
   return (

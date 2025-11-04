@@ -490,18 +490,18 @@ body {
   margin: 0;
 }
 
-/* IMPROVED: Sager Controls & Search/Filter Area */
+/* Condensed: Sager Controls & Search/Filter Area */
 .sager-controls {
-  margin-bottom: 25px;
+  margin-bottom: 15px;
 }
 
 .search-box {
-  margin-bottom: 20px;
+  margin-bottom: 10px;
 }
 
 .search-input {
   width: 100%;
-  padding: 14px 20px;
+  padding: 10px 16px;
   border: 2px solid #e0e0e0;
   border-radius: 8px;
   font-size: 15px;
@@ -522,9 +522,9 @@ body {
 
 .filter-row {
   display: flex;
-  gap: 15px;
+  gap: 12px;
   align-items: center;
-  padding: 20px;
+  padding: 10px 16px;
   background-color: #f8f9fa;
   border-radius: 8px;
   border: 1px solid #e9ecef;
@@ -532,7 +532,7 @@ body {
 
 .filter-select {
   flex: 1;
-  padding: 12px 16px;
+  padding: 10px 14px;
   border: 1px solid #dee2e6;
   border-radius: 6px;
   font-size: 14px;
@@ -549,6 +549,11 @@ body {
 
 .filter-select:hover {
   border-color: #bdc3c7;
+}
+
+.table-container {
+  overflow-x: auto;
+  margin-top: 12px;
 }
 
 /* IMPROVED: Create New Project Button - More Prominent */
@@ -3687,4 +3692,144 @@ body {
   .material-info-grid {
     grid-template-columns: 1fr;
   }
+}
+
+/* ============================================
+   CRITICAL CONFIRM DIALOG - ADD TO APP.CSS
+   ============================================ */
+
+/* Critical Confirm Dialog - Enhanced delete confirmation */
+.critical-confirm-dialog {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+  max-width: 520px;
+  width: 90%;
+  animation: scaleIn 0.2s ease-out;
+}
+
+.critical-header {
+  background: linear-gradient(135deg, #fff5f5 0%, #fee 100%);
+  border-bottom: 2px solid #e74c3c;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.critical-icon {
+  font-size: 28px;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.1);
+  }
+}
+
+.critical-message {
+  font-size: 15px;
+  line-height: 1.6;
+  color: #555;
+  margin-bottom: 16px;
+}
+
+.item-highlight {
+  background: #f8f9fa;
+  border-left: 4px solid #3498db;
+  padding: 12px 16px;
+  margin: 16px 0;
+  border-radius: 4px;
+}
+
+.item-highlight strong {
+  color: #2c3e50;
+  font-size: 16px;
+}
+
+.warning-box {
+  background: #fff3e0;
+  border-left: 4px solid #f39c12;
+  padding: 12px 16px;
+  margin: 16px 0;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.warning-icon {
+  font-size: 20px;
+}
+
+.warning-box span:last-child {
+  color: #e67e22;
+  font-weight: 500;
+  font-size: 14px;
+}
+
+.confirmation-input-section {
+  margin-top: 24px;
+  padding-top: 24px;
+  border-top: 2px solid #ecf0f1;
+}
+
+.confirmation-input-section label {
+  display: block;
+  margin-bottom: 8px;
+  color: #2c3e50;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.confirmation-input-section label strong {
+  color: #e74c3c;
+  font-weight: 700;
+}
+
+.confirmation-input-section input {
+  width: 100%;
+  padding: 12px 16px;
+  border: 2px solid #e0e0e0;
+  border-radius: 6px;
+  font-size: 15px;
+  font-weight: 500;
+  transition: all 0.2s;
+  font-family: inherit;
+}
+
+.confirmation-input-section input:focus {
+  outline: none;
+  border-color: #3498db;
+  box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+}
+
+.confirmation-input-section input.input-error {
+  border-color: #e74c3c;
+  background-color: #fff5f5;
+}
+
+.confirmation-input-section .error-text {
+  display: block;
+  margin-top: 8px;
+  color: #e74c3c;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+/* Disabled state for confirm button when input is empty */
+.btn-danger:disabled {
+  background: #bdc3c7;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.btn-danger:disabled:hover {
+  background: #bdc3c7;
+  transform: none;
+  box-shadow: none;
 }

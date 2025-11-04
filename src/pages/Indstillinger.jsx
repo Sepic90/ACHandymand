@@ -1,9 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, getDoc, setDoc } from 'firebase/firestore';
 import { db } from '../services/firebase';
+import { useNotification } from '../utils/notificationUtils';
 import EmployeeModal from '../components/EmployeeModal';
 
 function Indstillinger() {
+  const { showSuccess, showError, showCriticalConfirm } = useNotification();
+  
   const [employees, setEmployees] = useState([]);
   const [loading, setLoading] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
@@ -43,7 +46,7 @@ function Indstillinger() {
       setEmployees(employeeList);
     } catch (error) {
       console.error('Error loading employees:', error);
-      alert('Der opstod en fejl ved indlæsning af medarbejdere.');
+      showError('Der opstod en fejl ved indlæsning af medarbejdere.');
     } finally {
       setLoading(false);
     }
@@ -53,7 +56,7 @@ function Indstillinger() {
     try {
       const rateValue = parseFloat(tempRate);
       if (isNaN(rateValue) || rateValue <= 0) {
-        alert('Indtast venligst en gyldig timepris.');
+        showError('Indtast venligst en gyldig timepris.');
         return;
       }
 
@@ -64,10 +67,10 @@ function Indstillinger() {
       
       setDefaultRate(rateValue);
       setEditingRate(false);
-      alert('Timepris gemt!');
+      showSuccess('Timepris gemt!');
     } catch (error) {
       console.error('Error saving default rate:', error);
-      alert('Der opstod en fejl ved gemning af timepris.');
+      showError('Der opstod en fejl ved gemning af timepris.');
     }
   };
 
@@ -82,14 +85,24 @@ function Indstillinger() {
   };
 
   const handleDeleteEmployee = async (employee) => {
-    if (window.confirm(`Er du sikker på, at du vil slette ${employee.name}?`)) {
-      try {
-        await deleteDoc(doc(db, 'employees', employee.id));
-        await loadEmployees();
-      } catch (error) {
-        console.error('Error deleting employee:', error);
-        alert('Der opstod en fejl ved sletning af medarbejder.');
-      }
+    const confirmed = await showCriticalConfirm({
+      title: 'Slet medarbejder?',
+      message: 'Dette vil permanent slette medarbejderen fra systemet.',
+      itemName: employee.name,
+      warningText: 'Historiske timeregistreringer vil stadig være synlige, men medarbejderen kan ikke vælges fremadrettet',
+      confirmText: 'Slet Permanent',
+      cancelText: 'Annuller'
+    });
+
+    if (!confirmed) return;
+
+    try {
+      await deleteDoc(doc(db, 'employees', employee.id));
+      showSuccess('Medarbejder slettet!');
+      await loadEmployees();
+    } catch (error) {
+      console.error('Error deleting employee:', error);
+      showError('Der opstod en fejl ved sletning af medarbejder.');
     }
   };
 
@@ -100,18 +113,20 @@ function Indstillinger() {
           name: employeeData.name,
           updatedAt: new Date().toISOString()
         });
+        showSuccess('Medarbejder opdateret!');
       } else {
         await addDoc(collection(db, 'employees'), { 
           name: employeeData.name,
           createdAt: new Date().toISOString()
         });
+        showSuccess('Medarbejder oprettet!');
       }
       
       setModalOpen(false);
       await loadEmployees();
     } catch (error) {
       console.error('Error saving employee:', error);
-      alert('Der opstod en fejl ved gemning af medarbejder.');
+      showError('Der opstod en fejl ved gemning af medarbejder.');
     }
   };
 

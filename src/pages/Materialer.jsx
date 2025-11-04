@@ -9,27 +9,48 @@ import {
   updateMaterial,
   deleteMaterial
 } from '../utils/materialUtils';
+import { useNotification } from '../utils/notificationUtils';
 import SupplierModal from '../components/SupplierModal';
 import MaterialModal from '../components/MaterialModal';
 
 function Materialer() {
+  const { showSuccess, showError, showCriticalConfirm } = useNotification();
+  
   const [activeTab, setActiveTab] = useState('leverandoerer');
   const [suppliers, setSuppliers] = useState([]);
   const [materials, setMaterials] = useState([]);
+  const [filteredSuppliers, setFilteredSuppliers] = useState([]);
+  const [filteredMaterials, setFilteredMaterials] = useState([]);
   const [loading, setLoading] = useState(false);
   const [supplierModalOpen, setSupplierModalOpen] = useState(false);
   const [materialModalOpen, setMaterialModalOpen] = useState(false);
   const [editingSupplier, setEditingSupplier] = useState(null);
   const [editingMaterial, setEditingMaterial] = useState(null);
+  
+  // Search and filter states
+  const [supplierSearch, setSupplierSearch] = useState('');
+  const [supplierTypeFilter, setSupplierTypeFilter] = useState('all');
+  const [materialSearch, setMaterialSearch] = useState('');
+  const [materialCategoryFilter, setMaterialCategoryFilter] = useState('all');
 
   useEffect(() => {
     if (activeTab === 'leverandoerer') {
       loadSuppliers();
     } else if (activeTab === 'katalog') {
       loadMaterials();
-      loadSuppliers();
+      loadSuppliers(); // Need suppliers for material modal
     }
   }, [activeTab]);
+
+  // Filter suppliers when search or filter changes
+  useEffect(() => {
+    filterSuppliers();
+  }, [suppliers, supplierSearch, supplierTypeFilter]);
+
+  // Filter materials when search or filter changes
+  useEffect(() => {
+    filterMaterials();
+  }, [materials, materialSearch, materialCategoryFilter]);
 
   const loadSuppliers = async () => {
     setLoading(true);
@@ -59,6 +80,52 @@ function Materialer() {
     }
   };
 
+  const filterSuppliers = () => {
+    let filtered = [...suppliers];
+
+    // Search filter
+    if (supplierSearch.trim()) {
+      const searchLower = supplierSearch.toLowerCase();
+      filtered = filtered.filter(supplier =>
+        supplier.name?.toLowerCase().includes(searchLower) ||
+        supplier.contactPerson?.toLowerCase().includes(searchLower) ||
+        supplier.phone?.toLowerCase().includes(searchLower) ||
+        supplier.email?.toLowerCase().includes(searchLower) ||
+        supplier.cvr?.toLowerCase().includes(searchLower)
+      );
+    }
+
+    // Type filter
+    if (supplierTypeFilter !== 'all') {
+      filtered = filtered.filter(supplier => supplier.type === supplierTypeFilter);
+    }
+
+    setFilteredSuppliers(filtered);
+  };
+
+  const filterMaterials = () => {
+    let filtered = [...materials];
+
+    // Search filter
+    if (materialSearch.trim()) {
+      const searchLower = materialSearch.toLowerCase();
+      filtered = filtered.filter(material =>
+        material.name?.toLowerCase().includes(searchLower) ||
+        material.sku?.toLowerCase().includes(searchLower) ||
+        material.category?.toLowerCase().includes(searchLower) ||
+        material.defaultSupplierName?.toLowerCase().includes(searchLower)
+      );
+    }
+
+    // Category filter
+    if (materialCategoryFilter !== 'all') {
+      filtered = filtered.filter(material => material.category === materialCategoryFilter);
+    }
+
+    setFilteredMaterials(filtered);
+  };
+
+  // Supplier handlers
   const handleAddSupplier = () => {
     setEditingSupplier(null);
     setSupplierModalOpen(true);
@@ -70,18 +137,32 @@ function Materialer() {
   };
 
   const handleDeleteSupplier = async (supplier) => {
-    if (window.confirm(`Er du sikker på, at du vil slette leverandøren "${supplier.name}"?`)) {
-      try {
-        const result = await deleteSupplier(supplier.id);
-        if (result.success) {
-          await loadSuppliers();
-        } else {
-          alert('Der opstod en fejl ved sletning af leverandør.');
-        }
-      } catch (error) {
-        console.error('Error deleting supplier:', error);
-        alert('Der opstod en fejl ved sletning af leverandør.');
+    // Count materials linked to this supplier (check all materials, not filtered)
+    const linkedMaterials = materials.filter(m => m.defaultSupplierId === supplier.id);
+    const linkedCount = linkedMaterials.length;
+    
+    const confirmed = await showCriticalConfirm({
+      title: 'Slet leverandør?',
+      message: 'Dette vil permanent slette leverandøren fra systemet.',
+      itemName: supplier.name,
+      warningText: linkedCount > 0 ? `${linkedCount} materiale${linkedCount > 1 ? 'r' : ''} er knyttet til denne leverandør` : null,
+      confirmText: 'Slet Permanent',
+      cancelText: 'Annuller'
+    });
+
+    if (!confirmed) return;
+
+    try {
+      const result = await deleteSupplier(supplier.id);
+      if (result.success) {
+        showSuccess('Leverandør slettet!');
+        await loadSuppliers();
+      } else {
+        showError('Der opstod en fejl ved sletning af leverandør.');
       }
+    } catch (error) {
+      console.error('Error deleting supplier:', error);
+      showError('Der opstod en fejl ved sletning af leverandør.');
     }
   };
 
@@ -91,25 +172,28 @@ function Materialer() {
         const result = await updateSupplier(editingSupplier.id, formData);
         if (result.success) {
           setSupplierModalOpen(false);
+          showSuccess('Leverandør opdateret!');
           await loadSuppliers();
         } else {
-          alert('Der opstod en fejl ved opdatering af leverandør.');
+          showError('Der opstod en fejl ved opdatering af leverandør.');
         }
       } else {
         const result = await createSupplier(formData);
         if (result.success) {
           setSupplierModalOpen(false);
+          showSuccess('Leverandør oprettet!');
           await loadSuppliers();
         } else {
-          alert('Der opstod en fejl ved tilføjelse af leverandør.');
+          showError('Der opstod en fejl ved tilføjelse af leverandør.');
         }
       }
     } catch (error) {
       console.error('Error saving supplier:', error);
-      alert('Der opstod en fejl ved gemning af leverandør.');
+      showError('Der opstod en fejl ved gemning af leverandør.');
     }
   };
 
+  // Material handlers
   const handleAddMaterial = () => {
     setEditingMaterial(null);
     setMaterialModalOpen(true);
@@ -121,18 +205,28 @@ function Materialer() {
   };
 
   const handleDeleteMaterial = async (material) => {
-    if (window.confirm(`Er du sikker på, at du vil slette materialet "${material.name}"?`)) {
-      try {
-        const result = await deleteMaterial(material.id);
-        if (result.success) {
-          await loadMaterials();
-        } else {
-          alert('Der opstod en fejl ved sletning af materiale.');
-        }
-      } catch (error) {
-        console.error('Error deleting material:', error);
-        alert('Der opstod en fejl ved sletning af materiale.');
+    const confirmed = await showCriticalConfirm({
+      title: 'Slet materiale?',
+      message: 'Dette vil permanent slette materialet fra kataloget.',
+      itemName: material.name,
+      warningText: material.lastPurchaseDate ? 'Dette materiale har historiske indkøb knyttet til sig' : null,
+      confirmText: 'Slet Permanent',
+      cancelText: 'Annuller'
+    });
+
+    if (!confirmed) return;
+
+    try {
+      const result = await deleteMaterial(material.id);
+      if (result.success) {
+        showSuccess('Materiale slettet!');
+        await loadMaterials();
+      } else {
+        showError('Der opstod en fejl ved sletning af materiale.');
       }
+    } catch (error) {
+      console.error('Error deleting material:', error);
+      showError('Der opstod en fejl ved sletning af materiale.');
     }
   };
 
@@ -142,22 +236,24 @@ function Materialer() {
         const result = await updateMaterial(editingMaterial.id, formData);
         if (result.success) {
           setMaterialModalOpen(false);
+          showSuccess('Materiale opdateret!');
           await loadMaterials();
         } else {
-          alert('Der opstod en fejl ved opdatering af materiale.');
+          showError('Der opstod en fejl ved opdatering af materiale.');
         }
       } else {
         const result = await createMaterial(formData);
         if (result.success) {
           setMaterialModalOpen(false);
+          showSuccess('Materiale oprettet!');
           await loadMaterials();
         } else {
-          alert('Der opstod en fejl ved tilføjelse af materiale.');
+          showError('Der opstod en fejl ved tilføjelse af materiale.');
         }
       }
     } catch (error) {
       console.error('Error saving material:', error);
-      alert('Der opstod en fejl ved gemning af materiale.');
+      showError('Der opstod en fejl ved gemning af materiale.');
     }
   };
 
@@ -168,6 +264,7 @@ function Materialer() {
         <p>Administrer leverandører, materiale-katalog og se indkøbsoversigt</p>
       </div>
 
+      {/* Tab Navigation */}
       <div className="sag-tabs">
         <button 
           className={`sag-tab ${activeTab === 'leverandoerer' ? 'active' : ''}`}
@@ -189,7 +286,8 @@ function Materialer() {
         </button>
       </div>
 
-      <div style={{ marginTop: '20px' }}>
+      {/* Tab Content */}
+      <div className="sag-tab-content">
         {activeTab === 'leverandoerer' && (
           <div className="leverandoerer-tab">
             <div className="sag-card">
@@ -200,20 +298,48 @@ function Materialer() {
                 </button>
               </div>
               <div className="card-body">
+                {/* Search and Filter Controls */}
+                <div className="sager-controls">
+                  <div className="search-box">
+                    <input
+                      type="text"
+                      placeholder="Søg efter leverandør, kontakt, telefon, email eller CVR..."
+                      value={supplierSearch}
+                      onChange={(e) => setSupplierSearch(e.target.value)}
+                      className="search-input"
+                    />
+                  </div>
+                  
+                  <div className="filter-row">
+                    <select
+                      value={supplierTypeFilter}
+                      onChange={(e) => setSupplierTypeFilter(e.target.value)}
+                      className="filter-select"
+                    >
+                      <option value="all">Alle typer</option>
+                      <option value="Byggemarked">Byggemarked</option>
+                      <option value="Grossist">Grossist</option>
+                      <option value="Specialforhandler">Specialforhandler</option>
+                      <option value="Andet">Andet</option>
+                    </select>
+                  </div>
+                </div>
+
                 {loading ? (
                   <div className="empty-state">
                     <p>Indlæser leverandører...</p>
                   </div>
-                ) : suppliers.length === 0 ? (
+                ) : filteredSuppliers.length === 0 ? (
                   <div className="empty-state">
-                    <p>Ingen leverandører endnu</p>
-                    <button className="btn-primary" onClick={handleAddSupplier}>
-                      + Tilføj første leverandør
-                    </button>
+                    <p>
+                      {suppliers.length === 0
+                        ? 'Ingen leverandører endnu. Tilføj din første leverandør for at komme i gang.'
+                        : 'Ingen leverandører matcher din søgning eller filtre.'}
+                    </p>
                   </div>
                 ) : (
-                  <div className="data-table-container">
-                    <table className="data-table">
+                  <div className="table-container">
+                    <table className="sager-table">
                       <thead>
                         <tr>
                           <th>Navn</th>
@@ -221,52 +347,55 @@ function Materialer() {
                           <th>Kontaktperson</th>
                           <th>Telefon</th>
                           <th>Email</th>
-                          <th>CVR</th>
                           <th>Handlinger</th>
                         </tr>
                       </thead>
                       <tbody>
-                        {suppliers.map((supplier) => (
+                        {filteredSuppliers.map((supplier) => (
                           <tr key={supplier.id}>
-                            <td><strong>{supplier.name}</strong></td>
                             <td>
-                              {supplier.type && (
-                                <span className="table-badge table-badge-blue">
-                                  {supplier.type}
-                                </span>
+                              <strong>{supplier.name}</strong>
+                              {supplier.cvr && (
+                                <div style={{ fontSize: '12px', color: '#7f8c8d' }}>
+                                  CVR: {supplier.cvr}
+                                </div>
                               )}
                             </td>
+                            <td>{supplier.type || '-'}</td>
                             <td>{supplier.contactPerson || '-'}</td>
                             <td>
                               {supplier.phone ? (
-                                <a href={`tel:${supplier.phone}`} className="table-link">
+                                <a href={`tel:${supplier.phone}`} style={{ color: '#3498db', textDecoration: 'none' }}>
                                   {supplier.phone}
                                 </a>
-                              ) : '-'}
+                              ) : (
+                                '-'
+                              )}
                             </td>
                             <td>
                               {supplier.email ? (
-                                <a href={`mailto:${supplier.email}`} className="table-link">
+                                <a href={`mailto:${supplier.email}`} style={{ color: '#3498db', textDecoration: 'none' }}>
                                   {supplier.email}
                                 </a>
-                              ) : '-'}
+                              ) : (
+                                '-'
+                              )}
                             </td>
-                            <td>{supplier.cvr || '-'}</td>
-                            <td>
-                              <div className="table-actions">
-                                <button 
-                                  className="btn-small btn-secondary"
-                                  onClick={() => handleEditSupplier(supplier)}
-                                >
-                                  Redigér
-                                </button>
-                                <button 
-                                  className="btn-small btn-danger"
-                                  onClick={() => handleDeleteSupplier(supplier)}
-                                >
-                                  Slet
-                                </button>
-                              </div>
+                            <td className="actions-cell">
+                              <button 
+                                className="btn-icon btn-edit" 
+                                onClick={() => handleEditSupplier(supplier)}
+                                title="Redigér"
+                              >
+                                ✏️
+                              </button>
+                              <button 
+                                className="btn-icon btn-delete" 
+                                onClick={() => handleDeleteSupplier(supplier)}
+                                title="Slet"
+                              >
+                                🗑️
+                              </button>
                             </td>
                           </tr>
                         ))}
@@ -289,75 +418,104 @@ function Materialer() {
                 </button>
               </div>
               <div className="card-body">
+                {/* Search and Filter Controls */}
+                <div className="sager-controls">
+                  <div className="search-box">
+                    <input
+                      type="text"
+                      placeholder="Søg efter materiale, kategori, SKU eller leverandør..."
+                      value={materialSearch}
+                      onChange={(e) => setMaterialSearch(e.target.value)}
+                      className="search-input"
+                    />
+                  </div>
+                  
+                  <div className="filter-row">
+                    <select
+                      value={materialCategoryFilter}
+                      onChange={(e) => setMaterialCategoryFilter(e.target.value)}
+                      className="filter-select"
+                    >
+                      <option value="all">Alle kategorier</option>
+                      <option value="Træ">Træ</option>
+                      <option value="Gips">Gips</option>
+                      <option value="El-materialer">El-materialer</option>
+                      <option value="VVS">VVS</option>
+                      <option value="Maling">Maling</option>
+                      <option value="Værktøj">Værktøj</option>
+                      <option value="Diverse">Diverse</option>
+                    </select>
+                  </div>
+                </div>
+
                 {loading ? (
                   <div className="empty-state">
                     <p>Indlæser materialer...</p>
                   </div>
-                ) : materials.length === 0 ? (
+                ) : filteredMaterials.length === 0 ? (
                   <div className="empty-state">
-                    <p>Ingen materialer i kataloget endnu</p>
-                    <button className="btn-primary" onClick={handleAddMaterial}>
-                      + Tilføj første materiale
-                    </button>
+                    <p>
+                      {materials.length === 0
+                        ? 'Ingen materialer endnu. Tilføj dit første materiale for at komme i gang.'
+                        : 'Ingen materialer matcher din søgning eller filtre.'}
+                    </p>
                   </div>
                 ) : (
-                  <div className="data-table-container">
-                    <table className="data-table">
+                  <div className="table-container">
+                    <table className="sager-table">
                       <thead>
                         <tr>
                           <th>Navn</th>
                           <th>Kategori</th>
                           <th>Enhed</th>
-                          <th>Varenr.</th>
                           <th>Standard leverandør</th>
-                          <th>Avance</th>
                           <th>Seneste pris</th>
                           <th>Handlinger</th>
                         </tr>
                       </thead>
                       <tbody>
-                        {materials.map((material) => (
+                        {filteredMaterials.map((material) => (
                           <tr key={material.id}>
-                            <td><strong>{material.name}</strong></td>
                             <td>
-                              <span className="table-badge table-badge-green">
-                                {material.category}
-                              </span>
+                              <strong>{material.name}</strong>
+                              {material.sku && (
+                                <div style={{ fontSize: '12px', color: '#7f8c8d' }}>
+                                  SKU: {material.sku}
+                                </div>
+                              )}
                             </td>
-                            <td>
-                              <span className="table-badge table-badge-orange">
-                                {material.unit}
-                              </span>
-                            </td>
-                            <td>{material.sku || '-'}</td>
+                            <td>{material.category}</td>
+                            <td>{material.unit}</td>
                             <td>{material.defaultSupplierName || '-'}</td>
-                            <td>{material.standardMarkup}%</td>
                             <td>
                               {material.lastPurchasePrice ? (
                                 <>
-                                  {material.lastPurchasePrice.toFixed(2)} kr
-                                  <br />
-                                  <small style={{ color: '#7f8c8d' }}>
-                                    {new Date(material.lastPurchaseDate).toLocaleDateString('da-DK')}
-                                  </small>
+                                  {material.lastPurchasePrice} kr
+                                  {material.lastPurchaseDate && (
+                                    <div style={{ fontSize: '11px', color: '#7f8c8d' }}>
+                                      {new Date(material.lastPurchaseDate).toLocaleDateString('da-DK')}
+                                    </div>
+                                  )}
                                 </>
-                              ) : '-'}
+                              ) : (
+                                '-'
+                              )}
                             </td>
-                            <td>
-                              <div className="table-actions">
-                                <button 
-                                  className="btn-small btn-secondary"
-                                  onClick={() => handleEditMaterial(material)}
-                                >
-                                  Redigér
-                                </button>
-                                <button 
-                                  className="btn-small btn-danger"
-                                  onClick={() => handleDeleteMaterial(material)}
-                                >
-                                  Slet
-                                </button>
-                              </div>
+                            <td className="actions-cell">
+                              <button 
+                                className="btn-icon btn-edit" 
+                                onClick={() => handleEditMaterial(material)}
+                                title="Redigér"
+                              >
+                                ✏️
+                              </button>
+                              <button 
+                                className="btn-icon btn-delete" 
+                                onClick={() => handleDeleteMaterial(material)}
+                                title="Slet"
+                              >
+                                🗑️
+                              </button>
                             </td>
                           </tr>
                         ))}
@@ -378,10 +536,7 @@ function Materialer() {
               </div>
               <div className="card-body">
                 <div className="empty-state">
-                  <p>Indkøbsoversigt kommer snart...</p>
-                  <small style={{ color: '#7f8c8d', marginTop: '10px', display: 'block' }}>
-                    Her kan du se alle materialeindkøb på tværs af alle sager
-                  </small>
+                  <p>Indkøb vises her når du tilføjer materialer til sager</p>
                 </div>
               </div>
             </div>
@@ -389,6 +544,7 @@ function Materialer() {
         )}
       </div>
 
+      {/* Supplier Modal */}
       {supplierModalOpen && (
         <SupplierModal
           supplier={editingSupplier}
@@ -397,6 +553,7 @@ function Materialer() {
         />
       )}
 
+      {/* Material Modal */}
       {materialModalOpen && (
         <MaterialModal
           material={editingMaterial}
