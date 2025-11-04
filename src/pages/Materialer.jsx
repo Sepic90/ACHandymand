@@ -27,7 +27,7 @@ function Materialer() {
       loadSuppliers();
     } else if (activeTab === 'katalog') {
       loadMaterials();
-      loadSuppliers(); // Need suppliers for material modal
+      loadSuppliers();
     }
   }, [activeTab]);
 
@@ -59,7 +59,6 @@ function Materialer() {
     }
   };
 
-  // Supplier handlers
   const handleAddSupplier = () => {
     setEditingSupplier(null);
     setSupplierModalOpen(true);
@@ -111,7 +110,6 @@ function Materialer() {
     }
   };
 
-  // Material handlers
   const handleAddMaterial = () => {
     setEditingMaterial(null);
     setMaterialModalOpen(true);
@@ -170,7 +168,6 @@ function Materialer() {
         <p>Administrer leverandører, materiale-katalog og se indkøbsoversigt</p>
       </div>
 
-      {/* Tab Navigation */}
       <div className="sag-tabs">
         <button 
           className={`sag-tab ${activeTab === 'leverandoerer' ? 'active' : ''}`}
@@ -192,8 +189,7 @@ function Materialer() {
         </button>
       </div>
 
-      {/* Tab Content */}
-      <div className="sag-tab-content">
+      <div style={{ marginTop: '20px' }}>
         {activeTab === 'leverandoerer' && (
           <div className="leverandoerer-tab">
             <div className="sag-card">
@@ -216,97 +212,66 @@ function Materialer() {
                     </button>
                   </div>
                 ) : (
-                  <div className="suppliers-grid">
-                    {suppliers.map((supplier) => (
-                      <div key={supplier.id} className="supplier-card">
-                        <div className="supplier-card-header">
-                          <div>
-                            <h3 className="supplier-name">{supplier.name}</h3>
-                            {supplier.type && (
-                              <span className="supplier-type-badge">{supplier.type}</span>
-                            )}
-                          </div>
-                          <div className="supplier-card-actions">
-                            <button 
-                              className="btn-icon" 
-                              onClick={() => handleEditSupplier(supplier)}
-                              title="Redigér"
-                            >
-                              ✏️
-                            </button>
-                            <button 
-                              className="btn-icon" 
-                              onClick={() => handleDeleteSupplier(supplier)}
-                              title="Slet"
-                            >
-                              🗑️
-                            </button>
-                          </div>
-                        </div>
-
-                        <div className="supplier-card-body">
-                          <div className="supplier-info-grid">
-                            <div className="supplier-info-item">
-                              <span className="supplier-info-label">CVR:</span>
-                              <span className="supplier-info-value">{supplier.cvr || '-'}</span>
-                            </div>
-
-                            {supplier.customerNumber && (
-                              <div className="supplier-info-item">
-                                <span className="supplier-info-label">Kundenr:</span>
-                                <span className="supplier-info-value">{supplier.customerNumber}</span>
-                              </div>
-                            )}
-
-                            {supplier.contactPerson && (
-                              <div className="supplier-info-item">
-                                <span className="supplier-info-label">Kontakt:</span>
-                                <span className="supplier-info-value">{supplier.contactPerson}</span>
-                              </div>
-                            )}
-
-                            {supplier.phone && (
-                              <div className="supplier-info-item">
-                                <span className="supplier-info-label">Telefon:</span>
-                                <a href={`tel:${supplier.phone}`} className="supplier-info-link">
+                  <div className="data-table-container">
+                    <table className="data-table">
+                      <thead>
+                        <tr>
+                          <th>Navn</th>
+                          <th>Type</th>
+                          <th>Kontaktperson</th>
+                          <th>Telefon</th>
+                          <th>Email</th>
+                          <th>CVR</th>
+                          <th>Handlinger</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {suppliers.map((supplier) => (
+                          <tr key={supplier.id}>
+                            <td><strong>{supplier.name}</strong></td>
+                            <td>
+                              {supplier.type && (
+                                <span className="table-badge table-badge-blue">
+                                  {supplier.type}
+                                </span>
+                              )}
+                            </td>
+                            <td>{supplier.contactPerson || '-'}</td>
+                            <td>
+                              {supplier.phone ? (
+                                <a href={`tel:${supplier.phone}`} className="table-link">
                                   {supplier.phone}
                                 </a>
-                              </div>
-                            )}
-
-                            {supplier.email && (
-                              <div className="supplier-info-item">
-                                <span className="supplier-info-label">Email:</span>
-                                <a href={`mailto:${supplier.email}`} className="supplier-info-link">
+                              ) : '-'}
+                            </td>
+                            <td>
+                              {supplier.email ? (
+                                <a href={`mailto:${supplier.email}`} className="table-link">
                                   {supplier.email}
                                 </a>
+                              ) : '-'}
+                            </td>
+                            <td>{supplier.cvr || '-'}</td>
+                            <td>
+                              <div className="table-actions">
+                                <button 
+                                  className="btn-small btn-secondary"
+                                  onClick={() => handleEditSupplier(supplier)}
+                                >
+                                  Redigér
+                                </button>
+                                <button 
+                                  className="btn-small btn-danger"
+                                  onClick={() => handleDeleteSupplier(supplier)}
+                                >
+                                  Slet
+                                </button>
                               </div>
-                            )}
-
-                            {supplier.address && (
-                              <div className="supplier-info-item full-width">
-                                <span className="supplier-info-label">Adresse:</span>
-                                <span className="supplier-info-value">{supplier.address}</span>
-                              </div>
-                            )}
-
-                            {supplier.preferredPaymentMethod && (
-                              <div className="supplier-info-item">
-                                <span className="supplier-info-label">Betaling:</span>
-                                <span className="supplier-info-value">{supplier.preferredPaymentMethod}</span>
-                              </div>
-                            )}
-
-                            {supplier.notes && (
-                              <div className="supplier-info-item full-width">
-                                <span className="supplier-info-label">Noter:</span>
-                                <span className="supplier-info-value">{supplier.notes}</span>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    ))}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
                   </div>
                 )}
               </div>
@@ -336,76 +301,68 @@ function Materialer() {
                     </button>
                   </div>
                 ) : (
-                  <div className="materials-grid">
-                    {materials.map((material) => (
-                      <div key={material.id} className="material-card">
-                        <div className="material-card-header">
-                          <div>
-                            <h3 className="material-name">{material.name}</h3>
-                            <div className="material-meta">
-                              <span className="material-category-badge">{material.category}</span>
-                              <span className="material-unit-badge">{material.unit}</span>
-                            </div>
-                          </div>
-                          <div className="material-card-actions">
-                            <button 
-                              className="btn-icon" 
-                              onClick={() => handleEditMaterial(material)}
-                              title="Redigér"
-                            >
-                              ✏️
-                            </button>
-                            <button 
-                              className="btn-icon" 
-                              onClick={() => handleDeleteMaterial(material)}
-                              title="Slet"
-                            >
-                              🗑️
-                            </button>
-                          </div>
-                        </div>
-
-                        <div className="material-card-body">
-                          <div className="material-info-grid">
-                            {material.sku && (
-                              <div className="material-info-item">
-                                <span className="material-info-label">Varenr:</span>
-                                <span className="material-info-value">{material.sku}</span>
-                              </div>
-                            )}
-
-                            {material.defaultSupplierName && (
-                              <div className="material-info-item">
-                                <span className="material-info-label">Standard leverandør:</span>
-                                <span className="material-info-value">{material.defaultSupplierName}</span>
-                              </div>
-                            )}
-
-                            <div className="material-info-item">
-                              <span className="material-info-label">Standard avance:</span>
-                              <span className="material-info-value">{material.standardMarkup}%</span>
-                            </div>
-
-                            {material.lastPurchasePrice && (
-                              <>
-                                <div className="material-info-item">
-                                  <span className="material-info-label">Seneste indkøbspris:</span>
-                                  <span className="material-info-value">
-                                    {material.lastPurchasePrice.toFixed(2)} kr / {material.unit}
-                                  </span>
-                                </div>
-                                <div className="material-info-item">
-                                  <span className="material-info-label">Seneste indkøb:</span>
-                                  <span className="material-info-value">
+                  <div className="data-table-container">
+                    <table className="data-table">
+                      <thead>
+                        <tr>
+                          <th>Navn</th>
+                          <th>Kategori</th>
+                          <th>Enhed</th>
+                          <th>Varenr.</th>
+                          <th>Standard leverandør</th>
+                          <th>Avance</th>
+                          <th>Seneste pris</th>
+                          <th>Handlinger</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {materials.map((material) => (
+                          <tr key={material.id}>
+                            <td><strong>{material.name}</strong></td>
+                            <td>
+                              <span className="table-badge table-badge-green">
+                                {material.category}
+                              </span>
+                            </td>
+                            <td>
+                              <span className="table-badge table-badge-orange">
+                                {material.unit}
+                              </span>
+                            </td>
+                            <td>{material.sku || '-'}</td>
+                            <td>{material.defaultSupplierName || '-'}</td>
+                            <td>{material.standardMarkup}%</td>
+                            <td>
+                              {material.lastPurchasePrice ? (
+                                <>
+                                  {material.lastPurchasePrice.toFixed(2)} kr
+                                  <br />
+                                  <small style={{ color: '#7f8c8d' }}>
                                     {new Date(material.lastPurchaseDate).toLocaleDateString('da-DK')}
-                                  </span>
-                                </div>
-                              </>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    ))}
+                                  </small>
+                                </>
+                              ) : '-'}
+                            </td>
+                            <td>
+                              <div className="table-actions">
+                                <button 
+                                  className="btn-small btn-secondary"
+                                  onClick={() => handleEditMaterial(material)}
+                                >
+                                  Redigér
+                                </button>
+                                <button 
+                                  className="btn-small btn-danger"
+                                  onClick={() => handleDeleteMaterial(material)}
+                                >
+                                  Slet
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
                   </div>
                 )}
               </div>

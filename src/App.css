@@ -3344,141 +3344,201 @@ body {
 }
 
 /* ============================================
-   MATERIALER MODULE - ADD TO App.css
+   TABLE STYLES FOR MATERIALER MODULE
    ============================================ */
 
-/* Suppliers Grid */
-.suppliers-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
-  gap: 20px;
-}
-
-.supplier-card {
-  background: white;
-  border: 1px solid #e1e8ed;
+.data-table-container {
+  overflow-x: auto;
   border-radius: 8px;
-  overflow: hidden;
-  transition: all 0.2s;
+  border: 1px solid #e1e8ed;
 }
 
-.supplier-card:hover {
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  transform: translateY(-2px);
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: white;
 }
 
-.supplier-card-header {
+.data-table thead {
   background: #f8f9fa;
-  padding: 16px 20px;
-  border-bottom: 1px solid #e1e8ed;
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
+  border-bottom: 2px solid #e1e8ed;
 }
 
-.supplier-name {
-  font-size: 18px;
-  font-weight: 600;
-  color: #2c3e50;
-  margin: 0 0 8px 0;
-}
-
-.supplier-type-badge {
-  display: inline-block;
-  padding: 4px 12px;
-  background: #ebf5fb;
-  color: #3498db;
-  border-radius: 12px;
+.data-table th {
+  padding: 16px;
+  text-align: left;
   font-size: 12px;
-  font-weight: 500;
-}
-
-.supplier-card-actions {
-  display: flex;
-  gap: 8px;
-}
-
-.supplier-card-body {
-  padding: 20px;
-}
-
-.supplier-info-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 16px;
-}
-
-.supplier-info-item {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.supplier-info-item.full-width {
-  grid-column: 1 / -1;
-}
-
-.supplier-info-label {
-  font-size: 11px;
-  color: #7f8c8d;
   font-weight: 600;
+  color: #7f8c8d;
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
 
-.supplier-info-value {
-  font-size: 14px;
-  color: #2c3e50;
-  word-break: break-word;
+.data-table tbody tr {
+  border-bottom: 1px solid #e1e8ed;
+  transition: background-color 0.2s;
 }
 
-.supplier-info-link {
+.data-table tbody tr:hover {
+  background-color: #f8f9fa;
+}
+
+.data-table tbody tr:last-child {
+  border-bottom: none;
+}
+
+.data-table td {
+  padding: 16px;
   font-size: 14px;
+  color: #2c3e50;
+  vertical-align: middle;
+}
+
+.table-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.btn-small {
+  padding: 6px 12px;
+  font-size: 13px;
+  border-radius: 4px;
+  border: none;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.btn-small.btn-secondary {
+  background: #ecf0f1;
+  color: #2c3e50;
+}
+
+.btn-small.btn-secondary:hover {
+  background: #bdc3c7;
+}
+
+.btn-small.btn-danger {
+  background: #fee;
+  color: #e74c3c;
+}
+
+.btn-small.btn-danger:hover {
+  background: #e74c3c;
+  color: white;
+}
+
+.table-badge {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.table-badge-blue {
+  background: #ebf5fb;
+  color: #3498db;
+}
+
+.table-badge-green {
+  background: #e8f5e9;
+  color: #27ae60;
+}
+
+.table-badge-orange {
+  background: #fff3e0;
+  color: #f57c00;
+}
+
+.table-link {
   color: #3498db;
   text-decoration: none;
   transition: color 0.2s;
 }
 
-.supplier-info-link:hover {
+.table-link:hover {
   color: #2980b9;
   text-decoration: underline;
 }
 
-/* Supplier Modal */
-.supplier-modal {
-  max-width: 700px;
-  max-height: 85vh;
-}
-
-.supplier-modal .modal-form {
-  display: flex;
-  flex-direction: column;
-  gap: 24px;
-}
-
-.form-section {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-.form-section-title {
-  font-size: 16px;
-  font-weight: 600;
-  color: #2c3e50;
-  margin: 0;
-  padding-bottom: 12px;
-  border-bottom: 2px solid #ecf0f1;
-}
-
-/* Responsive for Suppliers */
-@media (max-width: 768px) {
-  .suppliers-grid {
-    grid-template-columns: 1fr;
+/* Responsive table */
+@media (max-width: 1024px) {
+  .data-table {
+    font-size: 13px;
   }
+  
+  .data-table th,
+  .data-table td {
+    padding: 12px 8px;
+  }
+  
+  .table-actions {
+    flex-direction: column;
+    gap: 4px;
+  }
+  
+  .btn-small {
+    width: 100%;
+    padding: 8px;
+  }
+}
 
-  .supplier-info-grid {
-    grid-template-columns: 1fr;
+@media (max-width: 768px) {
+  .data-table-container {
+    border: none;
+  }
+  
+  .data-table,
+  .data-table thead,
+  .data-table tbody,
+  .data-table tr,
+  .data-table th,
+  .data-table td {
+    display: block;
+  }
+  
+  .data-table thead {
+    display: none;
+  }
+  
+  .data-table tbody tr {
+    margin-bottom: 16px;
+    border: 1px solid #e1e8ed;
+    border-radius: 8px;
+    padding: 16px;
+  }
+  
+  .data-table tbody tr:hover {
+    background: white;
+  }
+  
+  .data-table td {
+    padding: 8px 0;
+    border: none;
+    position: relative;
+    padding-left: 50%;
+  }
+  
+  .data-table td::before {
+    content: attr(data-label);
+    position: absolute;
+    left: 0;
+    width: 45%;
+    padding-right: 10px;
+    font-weight: 600;
+    font-size: 12px;
+    color: #7f8c8d;
+    text-transform: uppercase;
+  }
+  
+  .table-actions {
+    flex-direction: row;
+    justify-content: flex-start;
+    margin-top: 8px;
   }
 }
 
