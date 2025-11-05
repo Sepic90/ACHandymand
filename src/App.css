@@ -4053,350 +4053,505 @@ body {
 }
 
 /* ============================================
-   TABLE STYLES FOR MATERIALER MODULE
+   MATERIALER MODULE REDESIGN - FRIENDLY UX
    ============================================ */
 
-.data-table-container {
-  overflow-x: auto;
-  border-radius: 8px;
-  border: 1px solid #e1e8ed;
+/* Material Tabs Spacing */
+.material-tabs {
+  margin-bottom: 32px;
 }
 
-.data-table {
-  width: 100%;
-  border-collapse: collapse;
+/* Tab Content Area */
+.tab-content-area {
+  background: transparent;
+}
+
+.tab-section {
   background: white;
+  border-radius: 12px;
+  padding: 32px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 
-.data-table thead {
+/* Tab Header Section */
+.tab-header-section {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 32px;
+  gap: 24px;
+}
+
+.tab-title {
+  font-size: 28px;
+  font-weight: 700;
+  color: #2c3e50;
+  margin: 0 0 8px 0;
+}
+
+.tab-subtitle {
+  font-size: 15px;
+  color: #7f8c8d;
+  margin: 0;
+  font-weight: 400;
+}
+
+/* Search Section */
+.search-section {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 24px;
+  align-items: center;
+}
+
+.search-box-large {
+  flex: 1;
+  position: relative;
+  display: flex;
+  align-items: center;
+  background: white;
+  border: 2px solid #e1e8ed;
+  border-radius: 12px;
+  padding: 0 20px;
+  transition: all 0.3s;
+}
+
+.search-box-large:focus-within {
+  border-color: #3498db;
+  box-shadow: 0 0 0 4px rgba(52, 152, 219, 0.1);
+}
+
+.search-icon {
+  font-size: 20px;
+  margin-right: 12px;
+  color: #7f8c8d;
+}
+
+.search-input-large {
+  flex: 1;
+  border: none;
+  outline: none;
+  padding: 16px 0;
+  font-size: 15px;
+  color: #2c3e50;
+  background: transparent;
+}
+
+.search-input-large::placeholder {
+  color: #95a5a6;
+}
+
+.btn-filter-toggle {
+  padding: 16px 24px;
+  background: white;
+  border: 2px solid #e1e8ed;
+  border-radius: 12px;
+  font-size: 15px;
+  font-weight: 600;
+  color: #2c3e50;
+  cursor: pointer;
+  transition: all 0.3s;
+  white-space: nowrap;
+}
+
+.btn-filter-toggle:hover {
+  border-color: #3498db;
+  background: #ebf5fb;
+  transform: translateY(-2px);
+}
+
+.btn-filter-toggle.active {
+  background: #3498db;
+  border-color: #3498db;
+  color: white;
+}
+
+/* Filter Panel */
+.filter-panel {
+  display: flex;
+  gap: 16px;
+  padding: 20px;
   background: #f8f9fa;
-  border-bottom: 2px solid #e1e8ed;
+  border-radius: 12px;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
 }
 
-.data-table th {
-  padding: 16px;
-  text-align: left;
-  font-size: 12px;
+.filter-group {
+  flex: 1;
+  min-width: 200px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.filter-group label {
+  font-size: 13px;
   font-weight: 600;
   color: #7f8c8d;
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
 
-.data-table tbody tr {
-  border-bottom: 1px solid #e1e8ed;
-  transition: background-color 0.2s;
+.filter-select-friendly {
+  padding: 12px 16px;
+  border: 2px solid #e1e8ed;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #2c3e50;
+  background: white;
+  cursor: pointer;
+  transition: all 0.2s;
 }
 
-.data-table tbody tr:hover {
-  background-color: #f8f9fa;
+.filter-select-friendly:focus {
+  outline: none;
+  border-color: #3498db;
+  box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
 }
 
-.data-table tbody tr:last-child {
+/* Tab Summary Boxes */
+.tab-summary-boxes {
+  display: flex;
+  gap: 20px;
+  margin-bottom: 32px;
+  flex-wrap: wrap;
+}
+
+.summary-box {
+  flex: 1;
+  min-width: 220px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 24px;
+  border-radius: 12px;
+  border: 2px solid;
+  transition: all 0.3s;
+}
+
+.summary-box:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+}
+
+.summary-box.box-blue {
+  background: #ebf5fb;
+  border-color: #3498db;
+}
+
+.summary-box.box-green {
+  background: #e8f8f5;
+  border-color: #27ae60;
+}
+
+.summary-box.box-orange {
+  background: #fef5e7;
+  border-color: #f39c12;
+}
+
+.summary-box.box-red {
+  background: #fadbd8;
+  border-color: #e74c3c;
+}
+
+.summary-icon {
+  font-size: 36px;
+  line-height: 1;
+}
+
+.summary-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.summary-value {
+  font-size: 24px;
+  font-weight: 700;
+  color: #2c3e50;
+  line-height: 1.2;
+}
+
+.summary-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #7f8c8d;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Content Table Wrapper */
+.content-table-wrapper {
+  border-radius: 12px;
+  overflow: hidden;
+  border: 2px solid #e1e8ed;
+}
+
+/* Friendly Table */
+.friendly-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: white;
+}
+
+.friendly-table thead {
+  background: #f8f9fa;
+}
+
+.friendly-table th {
+  padding: 16px;
+  text-align: left;
+  font-size: 12px;
+  font-weight: 700;
+  color: #7f8c8d;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-bottom: 2px solid #e1e8ed;
+}
+
+.friendly-table tbody tr {
+  border-bottom: 1px solid #f1f3f5;
+  transition: all 0.2s;
+}
+
+.friendly-table tbody tr:hover {
+  background: #f8f9fa;
+}
+
+.friendly-table tbody tr:last-child {
   border-bottom: none;
 }
 
-.data-table td {
+.friendly-table td {
   padding: 16px;
   font-size: 14px;
   color: #2c3e50;
   vertical-align: middle;
 }
 
-.table-actions {
-  display: flex;
-  gap: 8px;
-  align-items: center;
+.supplier-name-cell strong,
+.material-name-cell strong {
+  font-size: 15px;
+  color: #2c3e50;
+  font-weight: 600;
 }
 
-.btn-small {
-  padding: 6px 12px;
-  font-size: 13px;
-  border-radius: 4px;
-  border: none;
-  cursor: pointer;
-  font-weight: 500;
-  transition: all 0.2s;
-  white-space: nowrap;
-}
-
-.btn-small.btn-secondary {
+.badge-neutral {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
   background: #ecf0f1;
   color: #2c3e50;
 }
 
-.btn-small.btn-secondary:hover {
-  background: #bdc3c7;
+.margin-cell {
+  font-weight: 600;
 }
 
-.btn-small.btn-danger {
-  background: #fee;
-  color: #e74c3c;
+.actions-cell {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  justify-content: flex-end;
 }
 
-.btn-small.btn-danger:hover {
-  background: #e74c3c;
+.btn-icon-friendly {
+  background: none;
+  border: none;
+  font-size: 20px;
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 8px;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-icon-friendly:hover {
+  transform: scale(1.15);
+  background: #f8f9fa;
+}
+
+.btn-icon-friendly.btn-edit:hover {
+  background: #ebf5fb;
+}
+
+.btn-icon-friendly.btn-delete:hover {
+  background: #fadbd8;
+}
+
+/* Empty State */
+.empty-state-friendly {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 80px 20px;
+  text-align: center;
+}
+
+.empty-icon {
+  font-size: 64px;
+  margin-bottom: 20px;
+  line-height: 1;
+}
+
+.empty-state-friendly h3 {
+  font-size: 20px;
+  font-weight: 700;
+  color: #2c3e50;
+  margin: 0 0 12px 0;
+}
+
+.empty-state-friendly p {
+  font-size: 15px;
+  color: #7f8c8d;
+  margin: 0;
+  max-width: 400px;
+}
+
+/* Add Buttons with Colors */
+.btn-add-friendly {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 28px;
+  border-radius: 12px;
+  border: none;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.3s;
+  white-space: nowrap;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.btn-add-friendly:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+}
+
+.btn-add-friendly.btn-blue {
+  background: #3498db;
   color: white;
 }
 
-.table-badge {
-  display: inline-block;
-  padding: 4px 10px;
-  border-radius: 12px;
-  font-size: 12px;
-  font-weight: 500;
-  white-space: nowrap;
+.btn-add-friendly.btn-blue:hover {
+  background: #2980b9;
 }
 
-.table-badge-blue {
-  background: #ebf5fb;
-  color: #3498db;
+.btn-add-friendly.btn-green {
+  background: #27ae60;
+  color: white;
 }
 
-.table-badge-green {
-  background: #e8f5e9;
-  color: #27ae60;
+.btn-add-friendly.btn-green:hover {
+  background: #229954;
 }
 
-.table-badge-orange {
-  background: #fff3e0;
-  color: #f57c00;
+.btn-add-friendly.btn-orange {
+  background: #f39c12;
+  color: white;
 }
 
-.table-link {
-  color: #3498db;
-  text-decoration: none;
-  transition: color 0.2s;
+.btn-add-friendly.btn-orange:hover {
+  background: #e67e22;
 }
 
-.table-link:hover {
-  color: #2980b9;
-  text-decoration: underline;
+.btn-icon-large {
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 1;
 }
 
-/* Responsive table */
-@media (max-width: 1024px) {
-  .data-table {
-    font-size: 13px;
-  }
-  
-  .data-table th,
-  .data-table td {
-    padding: 12px 8px;
-  }
-  
-  .table-actions {
+/* ============================================
+   RESPONSIVE DESIGN FOR MATERIALER
+   ============================================ */
+
+@media (max-width: 1200px) {
+  .tab-summary-boxes {
     flex-direction: column;
-    gap: 4px;
   }
-  
-  .btn-small {
-    width: 100%;
-    padding: 8px;
+
+  .summary-box {
+    min-width: 100%;
   }
 }
 
 @media (max-width: 768px) {
-  .data-table-container {
-    border: none;
+  .tab-section {
+    padding: 20px;
   }
-  
-  .data-table,
-  .data-table thead,
-  .data-table tbody,
-  .data-table tr,
-  .data-table th,
-  .data-table td {
-    display: block;
+
+  .tab-header-section {
+    flex-direction: column;
   }
-  
-  .data-table thead {
-    display: none;
+
+  .btn-add-friendly {
+    width: 100%;
+    justify-content: center;
   }
-  
-  .data-table tbody tr {
-    margin-bottom: 16px;
-    border: 1px solid #e1e8ed;
-    border-radius: 8px;
+
+  .search-section {
+    flex-direction: column;
+  }
+
+  .btn-filter-toggle {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .filter-panel {
+    flex-direction: column;
+  }
+
+  .friendly-table {
+    font-size: 13px;
+  }
+
+  .friendly-table th,
+  .friendly-table td {
+    padding: 12px 8px;
+  }
+
+  .tab-title {
+    font-size: 24px;
+  }
+}
+
+@media (max-width: 480px) {
+  .tab-section {
     padding: 16px;
   }
-  
-  .data-table tbody tr:hover {
-    background: white;
+
+  .search-box-large {
+    padding: 0 16px;
   }
-  
-  .data-table td {
-    padding: 8px 0;
-    border: none;
-    position: relative;
-    padding-left: 50%;
+
+  .search-input-large {
+    padding: 14px 0;
+    font-size: 14px;
   }
-  
-  .data-table td::before {
-    content: attr(data-label);
-    position: absolute;
-    left: 0;
-    width: 45%;
-    padding-right: 10px;
-    font-weight: 600;
-    font-size: 12px;
-    color: #7f8c8d;
-    text-transform: uppercase;
+
+  .summary-value {
+    font-size: 20px;
   }
-  
-  .table-actions {
-    flex-direction: row;
-    justify-content: flex-start;
-    margin-top: 8px;
+
+  .actions-cell {
+    flex-direction: column;
+    gap: 4px;
   }
 }
 
 /* ============================================
-   MATERIALS CATALOG - ADD TO App.css
+   END OF MATERIALER MODULE REDESIGN
    ============================================ */
-
-/* Materials Grid */
-.materials-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
-  gap: 20px;
-}
-
-.material-card {
-  background: white;
-  border: 1px solid #e1e8ed;
-  border-radius: 8px;
-  overflow: hidden;
-  transition: all 0.2s;
-}
-
-.material-card:hover {
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  transform: translateY(-2px);
-}
-
-.material-card-header {
-  background: #f8f9fa;
-  padding: 16px 20px;
-  border-bottom: 1px solid #e1e8ed;
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-}
-
-.material-name {
-  font-size: 18px;
-  font-weight: 600;
-  color: #2c3e50;
-  margin: 0 0 8px 0;
-}
-
-.material-meta {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-
-.material-category-badge {
-  display: inline-block;
-  padding: 4px 12px;
-  background: #e8f5e9;
-  color: #27ae60;
-  border-radius: 12px;
-  font-size: 12px;
-  font-weight: 500;
-}
-
-.material-unit-badge {
-  display: inline-block;
-  padding: 4px 12px;
-  background: #fff3e0;
-  color: #f57c00;
-  border-radius: 12px;
-  font-size: 12px;
-  font-weight: 500;
-}
-
-.material-card-actions {
-  display: flex;
-  gap: 8px;
-}
-
-.material-card-body {
-  padding: 20px;
-}
-
-.material-info-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 16px;
-}
-
-.material-info-item {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.material-info-label {
-  font-size: 11px;
-  color: #7f8c8d;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.material-info-value {
-  font-size: 14px;
-  color: #2c3e50;
-  word-break: break-word;
-}
-
-/* Material Modal */
-.material-modal {
-  max-width: 650px;
-}
-
-.material-modal .modal-form {
-  display: flex;
-  flex-direction: column;
-  gap: 24px;
-}
-
-/* Info Box (for last purchase info) */
-.info-box {
-  background: #f8f9fa;
-  border-left: 4px solid #3498db;
-  border-radius: 6px;
-  padding: 16px;
-  margin-top: 8px;
-}
-
-.info-box-title {
-  font-size: 12px;
-  font-weight: 600;
-  color: #7f8c8d;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  margin-bottom: 8px;
-}
-
-.info-box-content {
-  font-size: 14px;
-  color: #2c3e50;
-  line-height: 1.6;
-}
-
-/* Responsive for Materials */
-@media (max-width: 768px) {
-  .materials-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .material-info-grid {
-    grid-template-columns: 1fr;
-  }
-}
 
 /* ============================================
    CRITICAL CONFIRM DIALOG - ADD TO APP.CSS

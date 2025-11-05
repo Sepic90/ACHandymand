@@ -1,92 +1,18 @@
-import { 
-  collection, 
-  addDoc, 
-  updateDoc, 
-  deleteDoc, 
-  doc, 
-  getDocs, 
-  getDoc,
-  query, 
-  where, 
-  orderBy 
-} from 'firebase/firestore';
 import { db } from '../services/firebase';
-
-// ============================================
-// FIRESTORE SCHEMA DEFINITIONS
-// ============================================
+import { collection, addDoc, getDocs, doc, updateDoc, deleteDoc, query, where, orderBy, getDoc } from 'firebase/firestore';
 
 /**
- * SUPPLIERS COLLECTION
+ * IMPORTANT NOTES ON PRICE STORAGE:
  * 
- * Collection: 'suppliers'
+ * In materialPurchases collection:
+ * - purchasePrice: TOTAL price for the quantity (e.g., 15 units at 10 kr each = 150 kr TOTAL)
+ * - sellingPrice: TOTAL price for the quantity (e.g., 15 units at 15 kr each = 225 kr TOTAL)
+ * - quantity: Number of units
+ * - Calculations: All totals are calculated by summing purchasePrice and sellingPrice directly
  * 
- * Fields:
- * - name: string (required) - Company name
- * - contactPerson: string - Contact person name
- * - phone: string - Phone number
- * - email: string - Email address
- * - cvr: string - CVR number
- * - type: string - "Byggemarked", "Grossist", "Specialforhandler", "Andet"
- * - preferredPaymentMethod: string - "Faktura", "Kontant", "Kort", "MobilePay"
- * - notes: string - Free text notes
- * - createdAt: string (ISO timestamp)
- * - createdBy: string (user identifier)
- * - updatedAt: string (ISO timestamp)
- * - updatedBy: string (user identifier)
- */
-
-/**
- * MATERIALS COLLECTION (Master Catalog)
- * 
- * Collection: 'materials'
- * 
- * Fields:
- * - name: string (required) - Material name (e.g., "Gipsplader 13mm")
- * - unit: string (required) - "stk", "m", "m²", "m³", "kg", "liter", "pose", "rulle", "palle"
- * - category: string (required) - "Træ", "Gips", "El-materialer", "VVS", "Maling", "Værktøj", "Diverse"
- * - sku: string - Supplier item number / artikelnummer
- * - defaultSupplierId: string - Reference to supplier document ID
- * - defaultSupplierName: string - Denormalized supplier name for quick display
- * - standardMarkup: number - Percentage (e.g., 40 for 40%)
- * - lastPurchasePrice: number - Auto-updated from latest purchase
- * - lastPurchaseDate: string (ISO timestamp) - Auto-updated
- * - createdAt: string (ISO timestamp)
- * - createdBy: string
- * - updatedAt: string (ISO timestamp)
- * - updatedBy: string
- */
-
-/**
- * MATERIAL PURCHASES COLLECTION (Transactions)
- * 
- * Collection: 'materialPurchases'
- * 
- * Fields:
- * - caseId: string (required) - Reference to project ID
- * - caseNumber: string - Denormalized project number (e.g., "2025-0042")
- * - caseName: string - Denormalized project name
- * - date: string (required) - Purchase date (ISO format)
- * - materialId: string (nullable) - Reference to materials catalog (if used)
- * - materialName: string (required) - Material name (stored for history)
- * - sku: string - Item number
- * - quantity: number (required) - Amount purchased
- * - unit: string (required) - Unit of measurement
- * - category: string (required) - Material category
- * - supplierId: string - Reference to supplier
- * - supplierName: string (required) - Denormalized supplier name
- * - purchasePrice: number (required) - Total purchase cost
- * - sellingPrice: number (required) - Total selling price
- * - marginKr: number - Calculated: sellingPrice - purchasePrice
- * - marginPercent: number - Calculated: (marginKr / purchasePrice) * 100
- * - paymentMethod: string - "Faktura", "Kontant", "Kort", "Firmakort"
- * - receiptImageUrl: string - Firebase Storage URL
- * - receiptStoragePath: string - Firebase Storage path
- * - notes: string - Free text notes
- * - createdAt: string (ISO timestamp)
- * - createdBy: string
- * - updatedAt: string (ISO timestamp)
- * - updatedBy: string
+ * In materials catalog:
+ * - lastPurchasePrice: PER-UNIT price (calculated as: totalPrice / quantity)
+ * - This allows reusing the price when adding the material to new purchases
  */
 
 // ============================================
@@ -126,7 +52,7 @@ export const getSuppliers = async () => {
     });
     
     // Sort by name
-    suppliers.sort((a, b) => a.name.localeCompare(b.name));
+    suppliers.sort((a, b) => (a.name || '').localeCompare(b.name));
     
     return { success: true, suppliers };
   } catch (error) {
@@ -167,7 +93,7 @@ export const deleteSupplier = async (supplierId) => {
 };
 
 // ============================================
-// MATERIALS CATALOG - CRUD OPERATIONS
+// MATERIALS - CRUD OPERATIONS
 // ============================================
 
 /**
@@ -177,8 +103,6 @@ export const createMaterial = async (materialData, createdBy = 'Admin') => {
   try {
     const docRef = await addDoc(collection(db, 'materials'), {
       ...materialData,
-      lastPurchasePrice: null,
-      lastPurchaseDate: null,
       createdAt: new Date().toISOString(),
       createdBy: createdBy,
       updatedAt: new Date().toISOString(),
@@ -193,7 +117,7 @@ export const createMaterial = async (materialData, createdBy = 'Admin') => {
 };
 
 /**
- * Get all materials
+ * Get all materials from catalog
  */
 export const getMaterials = async () => {
   try {
@@ -205,7 +129,7 @@ export const getMaterials = async () => {
     });
     
     // Sort by name
-    materials.sort((a, b) => a.name.localeCompare(b.name));
+    materials.sort((a, b) => (a.name || '').localeCompare(b.name));
     
     return { success: true, materials };
   } catch (error) {
@@ -251,16 +175,22 @@ export const deleteMaterial = async (materialId) => {
 
 /**
  * Create material purchase
- * Auto-calculates margins
- * Updates material catalog with last purchase info if materialId provided
+ * IMPORTANT: purchaseData.purchasePrice and purchaseData.sellingPrice should be TOTAL prices
+ * (e.g., if buying 15 units at 10 kr each, pass purchasePrice = 150)
+ * 
+ * Auto-calculates margins based on TOTAL prices
+ * Updates material catalog with PER-UNIT price if materialId provided
  */
 export const createMaterialPurchase = async (purchaseData, createdBy = 'Admin') => {
   try {
-    // Calculate margins
-    const marginKr = purchaseData.sellingPrice - purchaseData.purchasePrice;
-    const marginPercent = (marginKr / purchaseData.purchasePrice) * 100;
+    // Calculate margins based on TOTAL prices
+    const totalPurchasePrice = purchaseData.purchasePrice; // This is already the total
+    const totalSellingPrice = purchaseData.sellingPrice; // This is already the total
     
-    // Create purchase record
+    const marginKr = totalSellingPrice - totalPurchasePrice;
+    const marginPercent = totalPurchasePrice > 0 ? (marginKr / totalPurchasePrice) * 100 : 0;
+    
+    // Create purchase record with TOTAL prices
     const docRef = await addDoc(collection(db, 'materialPurchases'), {
       ...purchaseData,
       marginKr: marginKr,
@@ -272,9 +202,12 @@ export const createMaterialPurchase = async (purchaseData, createdBy = 'Admin') 
     });
     
     // Update material catalog if this purchase references a catalog item
-    if (purchaseData.materialId) {
+    // Store PER-UNIT price in catalog for reuse
+    if (purchaseData.materialId && purchaseData.quantity > 0) {
+      const unitPurchasePrice = purchaseData.purchasePrice / purchaseData.quantity;
+      
       await updateMaterial(purchaseData.materialId, {
-        lastPurchasePrice: purchaseData.purchasePrice / purchaseData.quantity, // Unit price
+        lastPurchasePrice: unitPurchasePrice, // Store per-unit price
         lastPurchaseDate: purchaseData.date
       }, createdBy);
     }
@@ -337,7 +270,7 @@ export const getAllMaterialPurchases = async () => {
 
 /**
  * Update material purchase
- * Recalculates margins
+ * Recalculates margins based on TOTAL prices
  */
 export const updateMaterialPurchase = async (purchaseId, updates, updatedBy = 'Admin') => {
   try {
@@ -349,11 +282,12 @@ export const updateMaterialPurchase = async (purchaseId, updates, updatedBy = 'A
       const docSnap = await getDoc(doc(db, 'materialPurchases', purchaseId));
       const currentData = docSnap.data();
       
-      const purchasePrice = updates.purchasePrice ?? currentData.purchasePrice;
-      const sellingPrice = updates.sellingPrice ?? currentData.sellingPrice;
+      // Use TOTAL prices for calculations
+      const totalPurchasePrice = updates.purchasePrice ?? currentData.purchasePrice;
+      const totalSellingPrice = updates.sellingPrice ?? currentData.sellingPrice;
       
-      const marginKr = sellingPrice - purchasePrice;
-      const marginPercent = (marginKr / purchasePrice) * 100;
+      const marginKr = totalSellingPrice - totalPurchasePrice;
+      const marginPercent = totalPurchasePrice > 0 ? (marginKr / totalPurchasePrice) * 100 : 0;
       
       dataToUpdate.marginKr = marginKr;
       dataToUpdate.marginPercent = marginPercent;
@@ -391,17 +325,21 @@ export const deleteMaterialPurchase = async (purchaseId) => {
 
 /**
  * Calculate total purchase cost for a case
+ * Sums up TOTAL purchasePrice values (already includes quantity)
  */
 export const calculateTotalPurchaseCost = (purchases) => {
   if (!purchases || purchases.length === 0) return 0;
+  // purchasePrice is already TOTAL price (quantity * unit_price)
   return purchases.reduce((sum, purchase) => sum + (purchase.purchasePrice || 0), 0);
 };
 
 /**
  * Calculate total selling price for a case
+ * Sums up TOTAL sellingPrice values (already includes quantity)
  */
 export const calculateTotalSellingPrice = (purchases) => {
   if (!purchases || purchases.length === 0) return 0;
+  // sellingPrice is already TOTAL price (quantity * unit_price)
   return purchases.reduce((sum, purchase) => sum + (purchase.sellingPrice || 0), 0);
 };
 
@@ -422,6 +360,30 @@ export const calculateAverageMarginPercent = (purchases) => {
   if (purchaseCost === 0) return 0;
   const margin = calculateTotalMargin(purchases);
   return (margin / purchaseCost) * 100;
+};
+
+/**
+ * Calculate per-unit prices from a purchase
+ * Helper function to derive unit prices from totals
+ */
+export const calculateUnitPrices = (purchase) => {
+  if (!purchase || !purchase.quantity || purchase.quantity === 0) {
+    return {
+      unitPurchasePrice: 0,
+      unitSellingPrice: 0,
+      unitMargin: 0
+    };
+  }
+  
+  const unitPurchasePrice = purchase.purchasePrice / purchase.quantity;
+  const unitSellingPrice = purchase.sellingPrice / purchase.quantity;
+  const unitMargin = unitSellingPrice - unitPurchasePrice;
+  
+  return {
+    unitPurchasePrice,
+    unitSellingPrice,
+    unitMargin
+  };
 };
 
 // ============================================
