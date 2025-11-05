@@ -114,7 +114,8 @@ function Sager() {
         await updateDoc(doc(db, 'projects', editingProject.id), formData);
         showSuccess('Perfekt! Sagen er opdateret');
       } else {
-        const projectNumber = await getNextProjectNumber();
+        const currentYear = new Date().getFullYear();
+		const projectNumber = await getNextProjectNumber(currentYear);
         await addDoc(collection(db, 'projects'), {
           ...formData,
           projectNumber,

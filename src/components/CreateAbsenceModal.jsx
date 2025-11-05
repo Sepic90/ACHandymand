@@ -102,7 +102,7 @@ function CreateAbsenceModal({ employee, employees, onClose, onSuccess }) {
   };
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
+    <div className="modal-overlay">
       <div className="modal-content" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
           <h2>Opret fravær - {employee.name}</h2>

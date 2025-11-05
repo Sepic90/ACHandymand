@@ -206,7 +206,7 @@ function ViewAbsenceModal({ employee, onClose, onSuccess }) {
   };
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
+    <div className="modal-overlay">
       <div className="modal-content modal-large" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
           <h2>Se / rediger fravær - {employee.name}</h2>

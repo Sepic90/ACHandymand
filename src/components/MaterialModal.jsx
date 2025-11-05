@@ -98,7 +98,7 @@ function MaterialModal({ material, suppliers, onSave, onClose }) {
   };
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
+    <div className="modal-overlay">
       <div className="modal-content material-modal" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
           <h2>{material ? 'Redigér Materiale' : 'Tilføj Materiale'}</h2>

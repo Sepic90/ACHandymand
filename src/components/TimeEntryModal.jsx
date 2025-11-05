@@ -158,7 +158,7 @@ function TimeEntryModal({ timeEntry, defaultRate, employees, onSave, onClose }) 
   if (!isOpen) return null;
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
+    <div className="modal-overlay">
       <div className="modal-content time-entry-modal" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
           <h2>{timeEntry ? 'Redigér Timer' : 'Tilføj Timer'}</h2>

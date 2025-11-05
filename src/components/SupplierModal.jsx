@@ -139,7 +139,7 @@ function SupplierModal({ supplier, onSave, onClose }) {
   };
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
+    <div className="modal-overlay">
       <div className="modal-content supplier-modal" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
           <h2>{supplier ? 'Redigér Leverandør' : 'Tilføj Leverandør'}</h2>

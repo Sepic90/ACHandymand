@@ -206,7 +206,7 @@ function MaterialPurchaseModal({
   };
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
+    <div className="modal-overlay">
       <div className="modal-content material-purchase-modal" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
           <h2>{purchase ? 'Redigér Materiale' : 'Tilføj Materiale'}</h2>
