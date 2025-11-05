@@ -43,7 +43,7 @@ function SagDetails() {
   const [editingTimeEntry, setEditingTimeEntry] = useState(null);
   const [editingMaterialPurchase, setEditingMaterialPurchase] = useState(null);
   const [defaultRate, setDefaultRate] = useState(450);
-  const [activeTab, setActiveTab] = useState('overblik');
+  const [activeTab, setActiveTab] = useState('oversigt');
 
   useEffect(() => {
     loadProject();
@@ -259,11 +259,24 @@ function SagDetails() {
     return type === 'fixed-price' ? 'Fast Pris' : 'Tid & Materiale';
   };
 
+  const getStatusConfig = (status) => {
+    const configs = {
+      'planned': { color: '#3498db', label: 'Planlagt' },
+      'in-progress': { color: '#27ae60', label: 'I Gang' },
+      'ready-for-invoice': { color: '#f39c12', label: 'Klar til Faktura' },
+      'closed': { color: '#9b59b6', label: 'Lukket' }
+    };
+    return configs[status] || configs['planned'];
+  };
+
   if (loading) {
     return (
       <div>
-        <div className="page-header">
-          <h1>Indlæser...</h1>
+        <div className="page-header-friendly">
+          <div className="loading-friendly">
+            <div className="spinner"></div>
+            <p>Henter sag...</p>
+          </div>
         </div>
       </div>
     );
@@ -281,405 +294,432 @@ function SagDetails() {
   const totalSellingPrice = calculateTotalSellingPrice(materialPurchases);
   const totalMaterialMargin = calculateTotalMargin(materialPurchases);
 
+  const statusConfig = getStatusConfig(project.status);
+
   return (
     <div>
-      <div className="page-header">
-        <button className="btn-back" onClick={() => navigate('/sager')}>
-          ← Tilbage til oversigt
+      {/* Friendly Header */}
+      <div className="sag-details-header">
+        <button className="btn-back-friendly" onClick={() => navigate('/sager')}>
+          ← Tilbage til alle sager
         </button>
-        <h1>{project.name}</h1>
-        <p>Sagsnr. {project.projectNumber}</p>
+        <div className="sag-details-title-section">
+          <h1 className="sag-details-customer">{project.customerName || 'Kunde ikke angivet'}</h1>
+          <p className="sag-details-name">{project.name}</p>
+          <div className="sag-details-meta">
+            <span className="sag-meta-number">Sagsnr. {project.projectNumber}</span>
+            <span className="sag-meta-divider">•</span>
+            <span className="sag-meta-status" style={{ 
+              backgroundColor: statusConfig.color + '20',
+              color: statusConfig.color,
+              border: `2px solid ${statusConfig.color}`
+            }}>
+              {statusConfig.label}
+            </span>
+          </div>
+        </div>
       </div>
 
-      <div className="sag-tabs">
+      {/* Colorful Tabs with Icons */}
+      <div className="sag-tabs-colorful">
         <button 
-          className={`sag-tab ${activeTab === 'overblik' ? 'active' : ''}`}
-          onClick={() => setActiveTab('overblik')}
+          className={`sag-tab-colorful tab-blue ${activeTab === 'oversigt' ? 'active' : ''}`}
+          onClick={() => setActiveTab('oversigt')}
         >
-          Overblik
+          <span className="tab-icon">📋</span>
+          <span className="tab-text">Oversigt</span>
         </button>
         <button 
-          className={`sag-tab ${activeTab === 'timeregistrering' ? 'active' : ''}`}
-          onClick={() => setActiveTab('timeregistrering')}
+          className={`sag-tab-colorful tab-green ${activeTab === 'timer' ? 'active' : ''}`}
+          onClick={() => setActiveTab('timer')}
         >
-          Timeregistrering
+          <span className="tab-icon">⏱️</span>
+          <span className="tab-text">Timer</span>
         </button>
         <button 
-          className={`sag-tab ${activeTab === 'materialer' ? 'active' : ''}`}
+          className={`sag-tab-colorful tab-orange ${activeTab === 'materialer' ? 'active' : ''}`}
           onClick={() => setActiveTab('materialer')}
         >
-          Materialer
+          <span className="tab-icon">🛠️</span>
+          <span className="tab-text">Materialer</span>
         </button>
         <button 
-          className={`sag-tab ${activeTab === 'filer' ? 'active' : ''}`}
-          onClick={() => setActiveTab('filer')}
+          className={`sag-tab-colorful tab-purple ${activeTab === 'dokumenter' ? 'active' : ''}`}
+          onClick={() => setActiveTab('dokumenter')}
         >
-          Filer
+          <span className="tab-icon">📁</span>
+          <span className="tab-text">Dokumenter</span>
         </button>
       </div>
 
-      <div className="sag-tab-content">
-        {activeTab === 'overblik' && (
-          <div className="overblik-tab">
-            <div className="sag-grid">
-              <div className="sag-card">
-                <div className="card-header">
-                  <h2>Sagsoplysninger</h2>
-                  <button className="btn-secondary btn-small" onClick={handleEditProject}>
-                    Redigér sag
+      {/* Tab Content */}
+      <div className="sag-tab-content-colorful">
+        {activeTab === 'oversigt' && (
+          <div className="oversigt-tab-new">
+            <div className="sag-sections-grid">
+              {/* Section 1: Sagsoplysninger - Blue */}
+              <div className="sag-section-card section-blue">
+                <div className="section-header header-blue">
+                  <div className="section-header-left">
+                    <span className="section-icon">📋</span>
+                    <h2>Sagsoplysninger</h2>
+                  </div>
+                  <button className="btn-section-action" onClick={handleEditProject}>
+                    ✏️ Ret
                   </button>
                 </div>
-                <div className="card-body">
-                  <div className="info-grid">
-                    <div className="info-item">
-                      <span className="info-label">Status:</span>
-                      <ProjectStatusBadge status={project.status} />
-                    </div>
-                    <div className="info-item">
-                      <span className="info-label">Type:</span>
-                      <span className="info-value">{getTypeLabel(project.type)}</span>
-                    </div>
-                    {project.type === 'fixed-price' && (
-                      <div className="info-item">
-                        <span className="info-label">Fast pris:</span>
-                        <span className="info-value">{formatCurrency(project.fixedPrice)}</span>
-                      </div>
-                    )}
-                    <div className="info-item">
-                      <span className="info-label">Oprettet:</span>
-                      <span className="info-value">{formatDate(project.createdAt)}</span>
-                    </div>
-                    <div className="info-item full-width">
-                      <span className="info-label">Beskrivelse:</span>
-                      <p className="info-description">{project.description || 'Ingen beskrivelse'}</p>
-                    </div>
+                <div className="section-body">
+                  <div className="info-row">
+                    <span className="info-label-new">Status:</span>
+                    <span className="info-badge" style={{ 
+                      backgroundColor: statusConfig.color + '20',
+                      color: statusConfig.color,
+                      border: `2px solid ${statusConfig.color}`
+                    }}>
+                      {statusConfig.label}
+                    </span>
                   </div>
-                </div>
-              </div>
-
-              <div className="sag-card">
-                <div className="card-header">
-                  <h2>Kundeoplysninger</h2>
-                </div>
-                <div className="card-body">
-                  <div className="info-grid">
-                    <div className="info-item full-width">
-                      <span className="info-label">Navn:</span>
-                      <span className="info-value">{project.customerName || 'Ikke angivet'}</span>
-                    </div>
-                    {project.customerPhone && (
-                      <div className="info-item">
-                        <span className="info-label">Telefon:</span>
-                        <a href={`tel:${project.customerPhone}`} className="info-link">
-                          {formatPhone(project.customerPhone)}
-                        </a>
-                      </div>
-                    )}
-                    {project.customerEmail && (
-                      <div className="info-item">
-                        <span className="info-label">Email:</span>
-                        <a href={`mailto:${project.customerEmail}`} className="info-link">
-                          {project.customerEmail}
-                        </a>
-                      </div>
-                    )}
-                    {project.customerAddress && (
-                      <div className="info-item full-width">
-                        <span className="info-label">Adresse:</span>
-                        <a 
-                          href={createMapsUrl(project.customerAddress)} 
-                          target="_blank" 
-                          rel="noopener noreferrer"
-                          className="info-link"
-                        >
-                          {project.customerAddress}
-                        </a>
-                      </div>
-                    )}
+                  <div className="info-row">
+                    <span className="info-label-new">Type:</span>
+                    <span className="info-value-new">{getTypeLabel(project.type)}</span>
                   </div>
-                </div>
-              </div>
-
-              <div className="sag-card">
-                <div className="card-header">
-                  <h2>Timer & Økonomi</h2>
-                </div>
-                <div className="card-body">
-                  <div className="stats-grid">
-                    <div className="stat-item">
-                      <div className="stat-value">{formatHours(totalHours)}</div>
-                      <div className="stat-label">Totale timer</div>
+                  {project.type === 'fixed-price' && (
+                    <div className="info-row">
+                      <span className="info-label-new">Fast pris:</span>
+                      <span className="info-value-new highlight-green">{formatCurrency(project.fixedPrice)}</span>
                     </div>
-                    <div className="stat-item">
-                      <div className="stat-value">{formatHours(billableHours)}</div>
-                      <div className="stat-label">Fakturerbare</div>
-                    </div>
-                    <div className="stat-item">
-                      <div className="stat-value">{formatCurrency(totalValue)}</div>
-                      <div className="stat-label">Værdi (timer)</div>
-                    </div>
+                  )}
+                  <div className="info-row">
+                    <span className="info-label-new">Oprettet:</span>
+                    <span className="info-value-new">{formatDate(project.createdAt)}</span>
                   </div>
-
-                  {project.type === 'fixed-price' && project.fixedPrice && (
-                    <div className="progress-section">
-                      <div className="progress-label">
-                        <span>Forbrug af fast pris</span>
-                        <span>{Math.round((totalValue / project.fixedPrice) * 100)}%</span>
-                      </div>
-                      <div className="progress-bar">
-                        <div 
-                          className="progress-fill"
-                          style={{ 
-                            width: `${Math.min((totalValue / project.fixedPrice) * 100, 100)}%`,
-                            background: totalValue > project.fixedPrice ? '#e74c3c' : '#27ae60'
-                          }}
-                        ></div>
-                      </div>
+                  {project.description && (
+                    <div className="info-row full">
+                      <span className="info-label-new">Beskrivelse:</span>
+                      <p className="info-description-new">{project.description}</p>
                     </div>
                   )}
                 </div>
               </div>
 
-              <div className="sag-card">
-                <div className="card-header">
-                  <h2>Materialer</h2>
-                </div>
-                <div className="card-body">
-                  <div className="stats-grid">
-                    <div className="stat-item">
-                      <div className="stat-value">{materialPurchases.length}</div>
-                      <div className="stat-label">Indkøb</div>
-                    </div>
-                    <div className="stat-item">
-                      <div className="stat-value">{formatCurrency(totalPurchaseCost)}</div>
-                      <div className="stat-label">Indkøbspris</div>
-                    </div>
-                    <div className="stat-item">
-                      <div className="stat-value">{formatCurrency(totalSellingPrice)}</div>
-                      <div className="stat-label">Salgspris</div>
-                    </div>
-                    <div className="stat-item">
-                      <div className="stat-value" style={{ color: totalMaterialMargin >= 0 ? '#27ae60' : '#e74c3c' }}>
-                        {formatCurrency(totalMaterialMargin)}
-                      </div>
-                      <div className="stat-label">Avance</div>
-                    </div>
+              {/* Section 2: Kunde - Blue */}
+              <div className="sag-section-card section-blue">
+                <div className="section-header header-blue">
+                  <div className="section-header-left">
+                    <span className="section-icon">👤</span>
+                    <h2>Kundeoplysninger</h2>
                   </div>
+                </div>
+                <div className="section-body">
+                  <div className="info-row">
+                    <span className="info-label-new">Navn:</span>
+                    <span className="info-value-new">{project.customerName || 'Ikke angivet'}</span>
+                  </div>
+                  {project.customerPhone && (
+                    <div className="info-row">
+                      <span className="info-label-new">Telefon:</span>
+                      <a href={`tel:${project.customerPhone}`} className="info-link-new">
+                        📞 {formatPhone(project.customerPhone)}
+                      </a>
+                    </div>
+                  )}
+                  {project.customerEmail && (
+                    <div className="info-row">
+                      <span className="info-label-new">Email:</span>
+                      <a href={`mailto:${project.customerEmail}`} className="info-link-new">
+                        ✉️ {project.customerEmail}
+                      </a>
+                    </div>
+                  )}
+                  {project.customerAddress && (
+                    <div className="info-row full">
+                      <span className="info-label-new">Adresse:</span>
+                      <a 
+                        href={createMapsUrl(project.customerAddress)} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="info-link-new"
+                      >
+                        📍 {project.customerAddress}
+                      </a>
+                    </div>
+                  )}
                 </div>
               </div>
 
-              <div className="sag-card">
-                <div className="card-header">
-                  <h2>Seneste timer</h2>
+              {/* Section 3: Timer - Green */}
+              <div className="sag-section-card section-green">
+                <div className="section-header header-green">
+                  <div className="section-header-left">
+                    <span className="section-icon">⏱️</span>
+                    <h2>Timer Status</h2>
+                  </div>
                 </div>
-                <div className="card-body">
-                  {timeEntries.length === 0 ? (
-                    <div className="empty-state-small">
-                      <p>Ingen timeregistreringer</p>
+                <div className="section-body">
+                  <div className="stats-compact">
+                    <div className="stat-compact">
+                      <div className="stat-value-compact">{totalHours.toFixed(1)}</div>
+                      <div className="stat-label-compact">I alt arbejdet</div>
                     </div>
-                  ) : (
-                    <div className="recent-entries-list">
-                      {timeEntries.slice(0, 5).map((entry) => (
-                        <div key={entry.id} className="recent-entry-item">
-                          <div className="recent-entry-date">{formatDate(entry.date)}</div>
-                          <div className="recent-entry-name">{entry.employeeName || 'Ikke angivet'}</div>
-                          <div className="recent-entry-hours">{formatHours(entry.duration || entry.hours || 0)}</div>
+                    <div className="stat-compact">
+                      <div className="stat-value-compact highlight-green">{billableHours.toFixed(1)}</div>
+                      <div className="stat-label-compact">Kan faktureres</div>
+                    </div>
+                    <div className="stat-compact">
+                      <div className="stat-value-compact highlight-green">{formatCurrency(totalValue)}</div>
+                      <div className="stat-label-compact">Værdi</div>
+                    </div>
+                  </div>
+                  {timeEntries.length > 0 && (
+                    <div className="recent-activity">
+                      <p className="recent-label">Seneste registreringer:</p>
+                      {timeEntries.slice(0, 3).map((entry, idx) => (
+                        <div key={idx} className="recent-item-compact">
+                          <span className="recent-date">{formatDate(entry.date)}</span>
+                          <span className="recent-name">{entry.employeeName}</span>
+                          <span className="recent-hours">{formatHours(entry.duration || entry.hours || 0)}</span>
                         </div>
                       ))}
                     </div>
                   )}
                 </div>
               </div>
+
+              {/* Section 4: Materialer - Orange */}
+              <div className="sag-section-card section-orange">
+                <div className="section-header header-orange">
+                  <div className="section-header-left">
+                    <span className="section-icon">🛠️</span>
+                    <h2>Materialer Status</h2>
+                  </div>
+                </div>
+                <div className="section-body">
+                  <div className="stats-compact">
+                    <div className="stat-compact">
+                      <div className="stat-value-compact">{materialPurchases.length}</div>
+                      <div className="stat-label-compact">Indkøb</div>
+                    </div>
+                    <div className="stat-compact">
+                      <div className="stat-value-compact">{formatCurrency(totalPurchaseCost)}</div>
+                      <div className="stat-label-compact">Indkøbspris</div>
+                    </div>
+                    <div className="stat-compact">
+                      <div className="stat-value-compact">{formatCurrency(totalSellingPrice)}</div>
+                      <div className="stat-label-compact">Salgspris</div>
+                    </div>
+                    <div className="stat-compact">
+                      <div 
+                        className="stat-value-compact" 
+                        style={{ color: totalMaterialMargin >= 0 ? '#27ae60' : '#e74c3c' }}
+                      >
+                        {formatCurrency(totalMaterialMargin)}
+                      </div>
+                      <div className="stat-label-compact">Avance</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         )}
 
-        {activeTab === 'timeregistrering' && (
-          <div className="timeregistrering-tab">
-            <div className="sag-card">
-              <div className="card-header">
-                <h2>Timeregistreringer</h2>
-                <button className="btn-primary" onClick={handleAddTimeEntry}>
-                  + Tilføj timer
-                </button>
-              </div>
-              <div className="card-body">
-                {timeEntries.length === 0 ? (
-                  <div className="empty-state">
-                    <p>Ingen timeregistreringer endnu</p>
-                    <button className="btn-primary" onClick={handleAddTimeEntry}>
-                      + Tilføj første timeregistrering
-                    </button>
+        {activeTab === 'timer' && (
+          <div className="timer-tab-new">
+            <div className="tab-header-section">
+              <div className="tab-summary-boxes">
+                <div className="summary-box box-green">
+                  <div className="summary-icon">⏱️</div>
+                  <div className="summary-content">
+                    <div className="summary-value">{totalHours.toFixed(1)} timer</div>
+                    <div className="summary-label">I alt arbejdet</div>
                   </div>
-                ) : (
-                  <>
-                    <div className="time-summary">
-                      <div className="summary-item">
-                        <span className="summary-label">Totale timer:</span>
-                        <span className="summary-value">{formatHours(totalHours)}</span>
-                      </div>
-                      <div className="summary-item">
-                        <span className="summary-label">Fakturerbare timer:</span>
-                        <span className="summary-value">{formatHours(billableHours)}</span>
-                      </div>
-                      <div className="summary-item">
-                        <span className="summary-label">Total værdi:</span>
-                        <span className="summary-value">{formatCurrency(totalValue)}</span>
-                      </div>
-                    </div>
-
-                    <table className="time-entries-table">
-                      <thead>
-                        <tr>
-                          <th>Dato</th>
-                          <th>Medarbejder</th>
-                          <th>Timer</th>
-                          <th>Timesats</th>
-                          <th>Fakt.</th>
-                          <th>Værdi</th>
-                          <th>Aktivitet</th>
-                          <th>Handlinger</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {timeEntries.map((entry) => (
-                          <tr key={entry.id}>
-                            <td>{formatDate(entry.date)}</td>
-                            <td>{entry.employeeName || 'Ikke angivet'}</td>
-                            <td>{formatHours(entry.duration || entry.hours || 0)}</td>
-                            <td>{formatCurrency(entry.rate || entry.hourlyRate || 0)}</td>
-                            <td>{entry.billable ? '✓' : '✗'}</td>
-                            <td>{entry.billable ? formatCurrency((entry.duration || entry.hours || 0) * (entry.rate || entry.hourlyRate || 0)) : '-'}</td>
-                            <td>{entry.activity || entry.description || '-'}</td>
-                            <td>
-                              <button 
-                                className="btn-icon" 
-                                onClick={() => handleEditTimeEntry(entry)}
-                                title="Redigér"
-                              >
-                                ✏️
-                              </button>
-                              <button 
-                                className="btn-icon" 
-                                onClick={() => handleDeleteTimeEntry(entry)}
-                                title="Slet"
-                              >
-                                🗑️
-                              </button>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </>
-                )}
+                </div>
+                <div className="summary-box box-green">
+                  <div className="summary-icon">✓</div>
+                  <div className="summary-content">
+                    <div className="summary-value">{billableHours.toFixed(1)} timer</div>
+                    <div className="summary-label">Kan faktureres</div>
+                  </div>
+                </div>
+                <div className="summary-box box-green">
+                  <div className="summary-icon">💰</div>
+                  <div className="summary-content">
+                    <div className="summary-value">{formatCurrency(totalValue)}</div>
+                    <div className="summary-label">Total værdi</div>
+                  </div>
+                </div>
               </div>
+              <button className="btn-add-friendly btn-green" onClick={handleAddTimeEntry}>
+                <span className="btn-icon-large">+</span> Registrer nye timer
+              </button>
+            </div>
+
+            <div className="content-table-wrapper">
+              {timeEntries.length === 0 ? (
+                <div className="empty-state-friendly">
+                  <div className="empty-icon">⏱️</div>
+                  <h3>Ingen timer registreret endnu</h3>
+                  <p>Klik på "Registrer nye timer" for at komme i gang</p>
+                </div>
+              ) : (
+                <table className="friendly-table">
+                  <thead>
+                    <tr>
+                      <th>Dato</th>
+                      <th>Medarbejder</th>
+                      <th>Timer</th>
+                      <th>Timepris</th>
+                      <th>Fakturerbar</th>
+                      <th>Værdi</th>
+                      <th>Aktivitet</th>
+                      <th></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {timeEntries.map((entry) => (
+                      <tr key={entry.id}>
+                        <td>{formatDate(entry.date)}</td>
+                        <td className="employee-cell">{entry.employeeName || 'Ikke angivet'}</td>
+                        <td className="hours-cell">{formatHours(entry.duration || entry.hours || 0)}</td>
+                        <td>{formatCurrency(entry.rate || entry.hourlyRate || 0)}</td>
+                        <td>{entry.billable ? '✓' : '✗'}</td>
+                        <td className="value-cell">
+                          {entry.billable ? formatCurrency((entry.duration || entry.hours || 0) * (entry.rate || entry.hourlyRate || 0)) : '-'}
+                        </td>
+                        <td className="activity-cell">{entry.activity || entry.description || '-'}</td>
+                        <td className="actions-cell">
+                          <button 
+                            className="btn-icon-action" 
+                            onClick={() => handleEditTimeEntry(entry)}
+                            title="Ret"
+                          >
+                            ✏️
+                          </button>
+                          <button 
+                            className="btn-icon-action" 
+                            onClick={() => handleDeleteTimeEntry(entry)}
+                            title="Slet"
+                          >
+                            🗑️
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
             </div>
           </div>
         )}
 
         {activeTab === 'materialer' && (
-          <div className="materialer-tab">
-            <div className="sag-card">
-              <div className="card-header">
-                <h2>Materialer</h2>
-                <button className="btn-primary" onClick={handleAddMaterial}>
-                  + Tilføj materiale
-                </button>
-              </div>
-              <div className="card-body">
-                {materialPurchases.length === 0 ? (
-                  <div className="empty-state">
-                    <p>Ingen materialer registreret endnu</p>
-                    <button className="btn-primary" onClick={handleAddMaterial}>
-                      + Tilføj første materiale
-                    </button>
+          <div className="materialer-tab-new">
+            <div className="tab-header-section">
+              <div className="tab-summary-boxes">
+                <div className="summary-box box-orange">
+                  <div className="summary-icon">📦</div>
+                  <div className="summary-content">
+                    <div className="summary-value">{materialPurchases.length}</div>
+                    <div className="summary-label">Indkøb</div>
                   </div>
-                ) : (
-                  <>
-                    <div className="time-summary">
-                      <div className="summary-item">
-                        <span className="summary-label">Antal indkøb:</span>
-                        <span className="summary-value">{materialPurchases.length}</span>
-                      </div>
-                      <div className="summary-item">
-                        <span className="summary-label">Total indkøbspris:</span>
-                        <span className="summary-value">{formatCurrency(totalPurchaseCost)}</span>
-                      </div>
-                      <div className="summary-item">
-                        <span className="summary-label">Total salgspris:</span>
-                        <span className="summary-value">{formatCurrency(totalSellingPrice)}</span>
-                      </div>
-                      <div className="summary-item">
-                        <span className="summary-label">Total avance:</span>
-                        <span className="summary-value" style={{ color: totalMaterialMargin >= 0 ? '#27ae60' : '#e74c3c' }}>
-                          {formatCurrency(totalMaterialMargin)}
-                        </span>
-                      </div>
-                    </div>
-
-                    <table className="time-entries-table">
-                      <thead>
-                        <tr>
-                          <th>Dato</th>
-                          <th>Materiale</th>
-                          <th>Antal</th>
-                          <th>Kategori</th>
-                          <th>Leverandør</th>
-                          <th>Indkøbspris</th>
-                          <th>Salgspris</th>
-                          <th>Avance</th>
-                          <th>Handlinger</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {materialPurchases.map((purchase) => (
-                          <tr key={purchase.id}>
-                            <td>{formatDate(purchase.date)}</td>
-                            <td>{purchase.materialName}</td>
-                            <td>{purchase.quantity} {purchase.unit}</td>
-                            <td>{purchase.category}</td>
-                            <td>{purchase.supplierName}</td>
-                            <td>{formatCurrency(purchase.purchasePrice)}</td>
-                            <td>{formatCurrency(purchase.sellingPrice)}</td>
-                            <td style={{ color: purchase.marginKr >= 0 ? '#27ae60' : '#e74c3c' }}>
-                              {formatCurrency(purchase.marginKr)}
-                            </td>
-                            <td>
-                              <button 
-                                className="btn-icon" 
-                                onClick={() => handleEditMaterial(purchase)}
-                                title="Redigér"
-                              >
-                                ✏️
-                              </button>
-                              <button 
-                                className="btn-icon" 
-                                onClick={() => handleDeleteMaterial(purchase)}
-                                title="Slet"
-                              >
-                                🗑️
-                              </button>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </>
-                )}
+                </div>
+                <div className="summary-box box-orange">
+                  <div className="summary-icon">🛒</div>
+                  <div className="summary-content">
+                    <div className="summary-value">{formatCurrency(totalPurchaseCost)}</div>
+                    <div className="summary-label">Indkøbspris</div>
+                  </div>
+                </div>
+                <div className="summary-box box-orange">
+                  <div className="summary-icon">💵</div>
+                  <div className="summary-content">
+                    <div className="summary-value">{formatCurrency(totalSellingPrice)}</div>
+                    <div className="summary-label">Salgspris</div>
+                  </div>
+                </div>
+                <div className={`summary-box ${totalMaterialMargin >= 0 ? 'box-green' : 'box-red'}`}>
+                  <div className="summary-icon">{totalMaterialMargin >= 0 ? '📈' : '📉'}</div>
+                  <div className="summary-content">
+                    <div className="summary-value">{formatCurrency(totalMaterialMargin)}</div>
+                    <div className="summary-label">Avance</div>
+                  </div>
+                </div>
               </div>
+              <button className="btn-add-friendly btn-orange" onClick={handleAddMaterial}>
+                <span className="btn-icon-large">+</span> Tilføj materiale
+              </button>
+            </div>
+
+            <div className="content-table-wrapper">
+              {materialPurchases.length === 0 ? (
+                <div className="empty-state-friendly">
+                  <div className="empty-icon">🛠️</div>
+                  <h3>Ingen materialer endnu</h3>
+                  <p>Klik på "Tilføj materiale" for at registrere indkøb</p>
+                </div>
+              ) : (
+                <table className="friendly-table">
+                  <thead>
+                    <tr>
+                      <th>Materiale</th>
+                      <th>Leverandør</th>
+                      <th>Antal</th>
+                      <th>Indkøbspris</th>
+                      <th>Salgspris</th>
+                      <th>Avance</th>
+                      <th></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {materialPurchases.map((purchase) => (
+                      <tr key={purchase.id}>
+                        <td className="material-cell">{purchase.materialName || 'Ikke angivet'}</td>
+                        <td>{purchase.supplierName || '-'}</td>
+                        <td>{purchase.quantity} {purchase.unit}</td>
+                        <td>{formatCurrency(purchase.purchasePrice)}</td>
+                        <td>{formatCurrency(purchase.sellingPrice)}</td>
+                        <td 
+                          className="margin-cell" 
+                          style={{ color: (purchase.marginKr || 0) >= 0 ? '#27ae60' : '#e74c3c' }}
+                        >
+                          {formatCurrency(purchase.marginKr)}
+                        </td>
+                        <td className="actions-cell">
+                          <button 
+                            className="btn-icon-action" 
+                            onClick={() => handleEditMaterial(purchase)}
+                            title="Ret"
+                          >
+                            ✏️
+                          </button>
+                          <button 
+                            className="btn-icon-action" 
+                            onClick={() => handleDeleteMaterial(purchase)}
+                            title="Slet"
+                          >
+                            🗑️
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
             </div>
           </div>
         )}
 
-        {activeTab === 'filer' && (
-          <FilesTab 
-            project={project} 
-            currentUser="Admin"
-          />
+        {activeTab === 'dokumenter' && (
+          <div className="dokumenter-tab-new">
+            <FilesTab 
+              project={project} 
+              currentUser="Admin"
+            />
+          </div>
         )}
       </div>
 
+      {/* Modals */}
       {editModalOpen && (
         <ProjectModal
           isOpen={editModalOpen}

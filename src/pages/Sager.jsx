@@ -7,6 +7,7 @@ import ProjectStatusBadge from '../components/ProjectStatusBadge';
 import { getNextProjectNumber, calculateTotalHours, getProjectTimeEntries } from '../utils/projectUtils';
 import { formatCurrency } from '../utils/formatUtils';
 import { useNotification } from '../utils/notificationUtils';
+import { formatFullAddress } from '../utils/postalCodeUtils';
 
 function Sager() {
   const navigate = useNavigate();
@@ -21,6 +22,7 @@ function Sager() {
   const [statusFilter, setStatusFilter] = useState('all');
   const [typeFilter, setTypeFilter] = useState('all');
   const [projectHours, setProjectHours] = useState({});
+  const [showFilters, setShowFilters] = useState(false);
 
   useEffect(() => {
     loadProjects();
@@ -54,7 +56,7 @@ function Sager() {
       loadProjectHours(projectList);
     } catch (error) {
       console.error('Error loading projects:', error);
-      showError('Der opstod en fejl ved indlæsning af sager.');
+      showError('Hovsa! Kunne ikke indlæse sager. Prøv igen.');
     } finally {
       setLoading(false);
     }
@@ -73,11 +75,12 @@ function Sager() {
     let filtered = [...projects];
 
     // Search filter
-    if (searchTerm.trim()) {
+    if (searchTerm) {
+      const term = searchTerm.toLowerCase();
       filtered = filtered.filter(project =>
-        project.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        project.customerName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        project.projectNumber?.toLowerCase().includes(searchTerm.toLowerCase())
+        (project.name && project.name.toLowerCase().includes(term)) ||
+        (project.customerName && project.customerName.toLowerCase().includes(term)) ||
+        (project.projectNumber && project.projectNumber.toLowerCase().includes(term))
       );
     }
 
@@ -105,39 +108,35 @@ function Sager() {
     setModalOpen(true);
   };
 
-  const handleSaveProject = async (projectData) => {
+  const handleSaveProject = async (formData) => {
     try {
       if (editingProject) {
-        // Update existing project
-        await updateDoc(doc(db, 'projects', editingProject.id), projectData);
-        showSuccess('Sag opdateret!');
+        await updateDoc(doc(db, 'projects', editingProject.id), formData);
+        showSuccess('Perfekt! Sagen er opdateret');
       } else {
-        // Create new project
         const projectNumber = await getNextProjectNumber();
         await addDoc(collection(db, 'projects'), {
-          ...projectData,
+          ...formData,
           projectNumber,
           createdAt: new Date().toISOString()
         });
-        showSuccess('Sag oprettet!');
+        showSuccess('Perfekt! Din nye sag er klar');
       }
       setModalOpen(false);
       loadProjects();
     } catch (error) {
       console.error('Error saving project:', error);
-      showError('Der opstod en fejl ved gemning af sag.');
+      showError('Hovsa! Noget gik galt. Prøv igen');
     }
   };
 
   const handleDeleteProject = async (e, project) => {
     e.stopPropagation();
     
-    // Get hours for this project to show in warning
     const hours = projectHours[project.id] || 0;
-    
     const confirmed = await showCriticalConfirm({
-      title: 'Slet sag?',
-      message: 'Dette vil permanent slette sagen og alle tilknyttede data (timer, materialer, filer).',
+      title: 'Slet sag permanent?',
+      message: 'Dette kan ikke fortrydes. Alle data på sagen vil blive slettet.',
       itemName: `${project.projectNumber} - ${project.name}`,
       warningText: hours > 0 ? `Der er registreret ${hours} timer på denne sag` : null,
       confirmText: 'Slet Permanent',
@@ -152,7 +151,7 @@ function Sager() {
       loadProjects();
     } catch (error) {
       console.error('Error deleting project:', error);
-      showError('Der opstod en fejl ved sletning af sag.');
+      showError('Hovsa! Kunne ikke slette sagen. Prøv igen.');
     }
   };
 
@@ -164,115 +163,192 @@ function Sager() {
     return type === 'fixed-price' ? 'Fast Pris' : 'Tid & Materiale';
   };
 
+  const getStatusConfig = (status) => {
+    const configs = {
+      'planned': { color: '#3498db', label: 'Planlagt', icon: '📋' },
+      'in-progress': { color: '#27ae60', label: 'I Gang', icon: '🔨' },
+      'ready-for-invoice': { color: '#f39c12', label: 'Klar til Faktura', icon: '📄' },
+      'closed': { color: '#9b59b6', label: 'Lukket', icon: '✅' }
+    };
+    return configs[status] || configs['planned'];
+  };
+
   return (
     <div>
-      <div className="page-header">
-        <h1>Sager</h1>
-        <p>Administrér projekter og timeregistrering</p>
+      {/* Hero Section with Welcome */}
+      <div className="page-header-friendly">
+        <div className="welcome-section">
+          <h1>Hej! Her er dine sager 👋</h1>
+          <p className="welcome-subtitle">Klik på en sag for at se detaljer og timeregistreringer</p>
+        </div>
       </div>
 
       <div className="content-card">
         {/* Search and Filters */}
-        <div className="sager-controls">
-          <div className="search-box">
-            <input
-              type="text"
-              placeholder="Søg efter sagsnavn, kunde eller sagsnummer..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="search-input"
-            />
+        <div className="sager-controls-new">
+          <div className="search-section">
+            <div className="search-box-large">
+              <span className="search-icon">🔍</span>
+              <input
+                type="text"
+                placeholder="Skriv kundenavn eller sagsnavn..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="search-input-large"
+              />
+            </div>
+            <button 
+              className="btn-filter-toggle"
+              onClick={() => setShowFilters(!showFilters)}
+            >
+              Filtre {showFilters ? '▲' : '▼'}
+            </button>
+            <button className="btn-create-friendly" onClick={handleAddProject}>
+              <span className="btn-icon-large">+</span> Opret ny sag
+            </button>
           </div>
           
-          <div className="filter-row">
-            <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              className="filter-select"
-            >
-              <option value="all">Alle statusser</option>
-              <option value="planned">Planlagt</option>
-              <option value="in-progress">I Gang</option>
-              <option value="ready-for-invoice">Klar til Faktura</option>
-              <option value="closed">Lukket</option>
-            </select>
+          {showFilters && (
+            <div className="filter-panel">
+              <div className="filter-group">
+                <label>Status:</label>
+                <select
+                  value={statusFilter}
+                  onChange={(e) => setStatusFilter(e.target.value)}
+                  className="filter-select-friendly"
+                >
+                  <option value="all">Alle statusser</option>
+                  <option value="planned">📋 Planlagt</option>
+                  <option value="in-progress">🔨 I Gang</option>
+                  <option value="ready-for-invoice">📄 Klar til Faktura</option>
+                  <option value="closed">✅ Lukket</option>
+                </select>
+              </div>
 
-            <select
-              value={typeFilter}
-              onChange={(e) => setTypeFilter(e.target.value)}
-              className="filter-select"
-            >
-              <option value="all">Alle typer</option>
-              <option value="fixed-price">Fast Pris</option>
-              <option value="time-material">Tid & Materiale</option>
-            </select>
-          </div>
-
-          <button className="btn-create-new-compact" onClick={handleAddProject}>
-            + Opret sag
-          </button>
+              <div className="filter-group">
+                <label>Type:</label>
+                <select
+                  value={typeFilter}
+                  onChange={(e) => setTypeFilter(e.target.value)}
+                  className="filter-select-friendly"
+                >
+                  <option value="all">Alle typer</option>
+                  <option value="fixed-price">Fast Pris</option>
+                  <option value="time-material">Tid & Materiale</option>
+                </select>
+              </div>
+            </div>
+          )}
         </div>
 
-        {/* Projects Table */}
+        {/* Projects Cards */}
         {loading ? (
-          <p>Indlæser sager...</p>
+          <div className="loading-friendly">
+            <div className="spinner"></div>
+            <p>Henter dine sager...</p>
+          </div>
         ) : filteredProjects.length === 0 ? (
-          <div className="empty-state">
+          <div className="empty-state-friendly">
+            <div className="empty-icon">📁</div>
+            <h3>
+              {projects.length === 0
+                ? 'Ingen sager endnu'
+                : 'Ingen sager matcher din søgning'}
+            </h3>
             <p>
               {projects.length === 0
-                ? 'Ingen sager endnu. Opret din første sag for at komme i gang.'
-                : 'Ingen sager matcher din søgning eller filtre.'}
+                ? 'Klik på "Opret ny sag" for at komme i gang!'
+                : 'Prøv at justere dine filtre eller søgning'}
             </p>
+            {projects.length === 0 && (
+              <button className="btn-create-friendly" onClick={handleAddProject} style={{ marginTop: '20px' }}>
+                <span className="btn-icon-large">+</span> Opret din første sag
+              </button>
+            )}
           </div>
         ) : (
-          <div className="table-container">
-            <table className="sager-table">
-              <thead>
-                <tr>
-                  <th>Sagsnr.</th>
-                  <th>Navn</th>
-                  <th>Kunde</th>
-                  <th>Type</th>
-                  <th>Status</th>
-                  <th>Timer</th>
-                  <th>Handlinger</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredProjects.map((project) => (
-                  <tr 
-                    key={project.id} 
-                    onClick={() => handleProjectClick(project)}
-                    className="clickable-row"
-                  >
-                    <td className="project-number">{project.projectNumber}</td>
-                    <td className="project-name">{project.name}</td>
-                    <td>{project.customerName || '-'}</td>
-                    <td>{getTypeLabel(project.type)}</td>
-                    <td>
-                      <ProjectStatusBadge status={project.status} />
-                    </td>
-                    <td>{projectHours[project.id] || 0} timer</td>
-                    <td className="actions-cell">
+          <div className="projects-grid">
+            {filteredProjects.map((project) => {
+              const statusConfig = getStatusConfig(project.status);
+              const hours = projectHours[project.id] || 0;
+              
+              return (
+                <div
+                  key={project.id}
+                  className="project-card"
+                  style={{ borderLeftColor: statusConfig.color }}
+                  onClick={() => handleProjectClick(project)}
+                >
+                  <div className="project-card-header">
+                    <div className="project-status-icon" style={{ color: statusConfig.color }}>
+                      {statusConfig.icon}
+                    </div>
+                    <div className="project-card-actions">
                       <button
-                        className="btn-icon btn-edit"
+                        className="card-action-btn edit"
                         onClick={(e) => handleEditProject(e, project)}
-                        title="Redigér"
+                        title="Ret sag"
                       >
                         ✏️
                       </button>
                       <button
-                        className="btn-icon btn-delete"
+                        className="card-action-btn delete"
                         onClick={(e) => handleDeleteProject(e, project)}
-                        title="Slet"
+                        title="Slet sag"
                       >
                         🗑️
                       </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+                    </div>
+                  </div>
+
+                  <div className="project-card-body">
+                    <h3 className="project-card-title">{project.name}</h3>
+                    
+                    {(project.streetAddress || project.postalCode || project.city || project.customerAddress) && (
+                      <p className="project-card-address">
+                        📍 {project.streetAddress && project.postalCode && project.city
+                          ? formatFullAddress(project.streetAddress, project.postalCode, project.city)
+                          : project.customerAddress || 'Adresse ikke angivet'
+                        }
+                      </p>
+                    )}
+                    
+                    <p className="project-card-customer">
+                      <span className="label-subtle">Kunde:</span> {project.customerName || 'Ikke angivet'}
+                    </p>
+                    
+                    <div className="project-card-meta">
+                      <div className="meta-item">
+                        <span className="meta-label">Sagsnr:</span>
+                        <span className="meta-value">{project.projectNumber}</span>
+                      </div>
+                      <div className="meta-item">
+                        <span className="meta-label">Type:</span>
+                        <span className="meta-value">{getTypeLabel(project.type)}</span>
+                      </div>
+                    </div>
+
+                    <div className="project-card-footer">
+                      <div className="project-hours">
+                        <span className="hours-icon">⏱️</span>
+                        <span className="hours-value">{hours} timer</span>
+                      </div>
+                      <div className="project-status-badge" style={{ 
+                        backgroundColor: statusConfig.color + '20',
+                        color: statusConfig.color,
+                        borderColor: statusConfig.color
+                      }}>
+                        {statusConfig.label}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="project-card-hover-indicator">
+                    Se mere →
+                  </div>
+                </div>
+              );
+            })}
           </div>
         )}
       </div>
