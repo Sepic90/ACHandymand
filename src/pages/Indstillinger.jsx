@@ -133,9 +133,15 @@ function Indstillinger() {
   return (
     <div>
       <div className="page-header">
-        <h1>Indstillinger</h1>
-        <p>Administrér medarbejdere og priser</p>
-      </div>
+	    <h1>Indstillinger</h1>
+	    <p>Administrér medarbejdere og priser</p>
+	    <img 
+		  src="/admin.png" 
+		  alt="" 
+		  className="page-header-clipart clipart-indstillinger"
+		  aria-hidden="true"
+	    />
+	  </div>
 
       {/* Standard Timepris */}
       <div className="content-card" style={{ marginBottom: '20px' }}>

@@ -89,10 +89,16 @@ function Timeregistrering() {
 
   return (
     <div>
-      <div className="page-header">
-        <h1>Timeregistrering</h1>
-        <p>Generér timeregistreringsformularer til medarbejdere</p>
-      </div>
+ 	  <div className="page-header">
+	    <h1>Timeregistrering</h1>
+	    <p>Generér timeregistreringsformularer for medarbejdere</p>
+	    <img 
+		  src="/worker.png" 
+		  alt="" 
+		  className="page-header-clipart clipart-timeregistrering"
+		  aria-hidden="true"
+	    />
+	  </div>
 
       <div className="content-card">
         <h3 style={{ marginBottom: '20px' }}>Generér PDF</h3>

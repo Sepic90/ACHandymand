@@ -5065,3 +5065,85 @@ body {
   background: #f8f9fa;
   border-radius: 0 0 10px 10px;
 }
+
+/* ============================================
+   CLIPART DECORATIONS - PROPER ALIGNMENT
+   Replace previous clipart CSS with this version
+   ============================================ */
+
+/* Page Header Clipart - Aligned with title on the right side */
+.page-header-clipart {
+  position: absolute;
+  right: 150px;
+  top: 10px;
+  width: 140px;
+  height: auto;
+  opacity: 1.0; /* ⭐ FULLY OPAQUE - Change to lower value for transparency ⭐ */
+  pointer-events: none;
+  z-index: 0;  /* Behind container */
+  user-select: none;
+}
+
+/* Ensure parent containers are positioned relative */
+.page-header-friendly,
+.welcome-section,
+.page-header {
+  position: relative;
+  z-index: 0;
+}
+
+/* Content card needs higher z-index to be in front of clipart */
+.content-card {
+  position: relative;
+  z-index: 1;
+}
+
+/* Add spacing below subtitles so they don't touch containers */
+.welcome-subtitle,
+.page-header p,
+.helper-text {
+  margin-bottom: 24px !important;
+}
+
+/* Specific positioning adjustments for different pages */
+.clipart-sager {
+  width: 140px;
+  right: 120px;
+  top: 2px;
+}
+
+.clipart-materialer {
+  width: 130px;
+  right: 140px;
+  top: 2px;
+}
+
+.clipart-timeregistrering {
+  width: 120px;
+  right: 160px;
+  top: 2px;
+}
+
+.clipart-indstillinger {
+  width: 130px;
+  right: 140px;
+  top: 2px;
+}
+
+.clipart-sagdetails {
+  width: 130px;
+  right: 150px;
+  top: 100px;
+  z-index: 0;
+}
+
+/* Make clipart invisible on mobile to avoid clutter */
+@media (max-width: 768px) {
+  .page-header-clipart {
+    display: none;
+  }
+}
+
+/* ============================================
+   END OF CLIPART DECORATIONS
+   ============================================ */

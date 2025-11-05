@@ -365,9 +365,15 @@ function Materialer() {
     <div>
       {/* Welcome Section */}
       <div className="welcome-section">
-        <h1>Hej! Her er dine materialer</h1>
-        <p className="helper-text">Administrer leverandører, materialer og hold styr på alle indkøb</p>
-      </div>
+	    <h1>Hej! Her er dine materialer</h1>
+	    <p className="helper-text">Administrer leverandører, materialer og hold styr på alle indkøb</p>
+	    <img 
+	 	  src="/planks.png" 
+		  alt="" 
+		  className="page-header-clipart clipart-materialer"
+		  aria-hidden="true"
+	    />
+	</div>
 
       {/* Colorful Tabs with Icons */}
       <div className="sag-tabs-colorful material-tabs">

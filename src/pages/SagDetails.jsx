@@ -357,8 +357,14 @@ function SagDetails() {
         {activeTab === 'oversigt' && (
           <div className="oversigt-tab-new">
             <div className="sag-sections-grid">
-              {/* Section 1: Sagsoplysninger - Blue */}
-              <div className="sag-section-card section-blue">
+			  <img 
+				src="/house.png" 
+				alt="" 
+				className="page-header-clipart clipart-sagdetails"
+				aria-hidden="true"
+			  />
+			  {/* Section 1: Sagsoplysninger - Blue */}
+			  <div className="sag-section-card section-blue">
                 <div className="section-header header-blue">
                   <div className="section-header-left">
                     <span className="section-icon">📋</span>

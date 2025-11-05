@@ -176,12 +176,18 @@ function Sager() {
   return (
     <div>
       {/* Hero Section with Welcome */}
-      <div className="page-header-friendly">
-        <div className="welcome-section">
-          <h1>Hej! Her er dine sager 👋</h1>
-          <p className="welcome-subtitle">Klik på en sag for at se detaljer og timeregistreringer</p>
-        </div>
-      </div>
+        <div className="page-header-friendly">
+	      <div className="welcome-section">
+		    <h1>Hej! Her er dine sager 👋</h1>
+		    <p className="welcome-subtitle">Klik på en sag for at se detaljer og timeregistreringer</p>
+		    <img 
+		      src="/workers.png" 
+		      alt="" 
+		      className="page-header-clipart clipart-sager"
+		      aria-hidden="true"
+		    />
+	      </div>
+	    </div>
 
       <div className="content-card">
         {/* Search and Filters */}
