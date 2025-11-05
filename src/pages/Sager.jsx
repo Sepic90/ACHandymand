@@ -9,6 +9,36 @@ import { formatCurrency } from '../utils/formatUtils';
 import { useNotification } from '../utils/notificationUtils';
 import { formatFullAddress } from '../utils/postalCodeUtils';
 
+// Color palette for project cards - eye-friendly but dark enough for white text
+const CARD_COLORS = [
+  '#5B8DBE', // Medium blue
+  '#7A9D54', // Olive green
+  '#CD7672', // Dusty rose
+  '#8B7FB8', // Muted purple
+  '#CC8E5E', // Terracotta
+  '#5B9D9D', // Teal
+  '#9D6B8B', // Mauve
+  '#7B8D5B', // Sage green
+  '#8B6B5B', // Warm brown
+  '#6B7B9D', // Slate blue
+  '#9D7B5B', // Sandy brown
+  '#6B9D7B', // Forest green
+];
+
+// Generate a consistent color based on project ID
+const getProjectColor = (projectId) => {
+  if (!projectId) return CARD_COLORS[0];
+  
+  // Simple hash function to get consistent color for same ID
+  let hash = 0;
+  for (let i = 0; i < projectId.length; i++) {
+    hash = projectId.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  
+  const index = Math.abs(hash) % CARD_COLORS.length;
+  return CARD_COLORS[index];
+};
+
 function Sager() {
   const navigate = useNavigate();
   const { showSuccess, showError, showCriticalConfirm } = useNotification();
@@ -63,35 +93,36 @@ function Sager() {
   };
 
   const loadProjectHours = async (projectList) => {
-    const hours = {};
+    const hoursMap = {};
     for (const project of projectList) {
-      const timeEntries = await getProjectTimeEntries(project.id);
-      hours[project.id] = calculateTotalHours(timeEntries);
+      const entries = await getProjectTimeEntries(project.id);
+      hoursMap[project.id] = calculateTotalHours(entries);
     }
-    setProjectHours(hours);
+    setProjectHours(hoursMap);
   };
 
   const filterProjects = () => {
-    let filtered = [...projects];
+    let filtered = projects;
 
     // Search filter
-    if (searchTerm) {
-      const term = searchTerm.toLowerCase();
-      filtered = filtered.filter(project =>
-        (project.name && project.name.toLowerCase().includes(term)) ||
-        (project.customerName && project.customerName.toLowerCase().includes(term)) ||
-        (project.projectNumber && project.projectNumber.toLowerCase().includes(term))
+    if (searchTerm.trim()) {
+      filtered = filtered.filter((project) =>
+        project.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        project.customerName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        project.projectNumber?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        project.streetAddress?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        project.city?.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
 
     // Status filter
     if (statusFilter !== 'all') {
-      filtered = filtered.filter(project => project.status === statusFilter);
+      filtered = filtered.filter((project) => project.status === statusFilter);
     }
 
     // Type filter
     if (typeFilter !== 'all') {
-      filtered = filtered.filter(project => project.type === typeFilter);
+      filtered = filtered.filter((project) => project.type === typeFilter);
     }
 
     setFilteredProjects(filtered);
@@ -108,26 +139,28 @@ function Sager() {
     setModalOpen(true);
   };
 
-  const handleSaveProject = async (formData) => {
+  const handleSaveProject = async (projectData) => {
     try {
       if (editingProject) {
-        await updateDoc(doc(db, 'projects', editingProject.id), formData);
-        showSuccess('Perfekt! Sagen er opdateret');
+        // Update existing project
+        await updateDoc(doc(db, 'projects', editingProject.id), projectData);
+        showSuccess('Sag opdateret!');
       } else {
-        const currentYear = new Date().getFullYear();
-		const projectNumber = await getNextProjectNumber(currentYear);
+        // Create new project with project number
+        const nextNumber = await getNextProjectNumber();
         await addDoc(collection(db, 'projects'), {
-          ...formData,
-          projectNumber,
+          ...projectData,
+          projectNumber: nextNumber,
           createdAt: new Date().toISOString()
         });
-        showSuccess('Perfekt! Din nye sag er klar');
+        showSuccess('Ny sag oprettet!');
       }
       setModalOpen(false);
+      setEditingProject(null);
       loadProjects();
     } catch (error) {
       console.error('Error saving project:', error);
-      showError('Hovsa! Noget gik galt. Prøv igen');
+      showError('Hovsa! Kunne ikke gemme sagen. Prøv igen.');
     }
   };
 
@@ -135,6 +168,7 @@ function Sager() {
     e.stopPropagation();
     
     const hours = projectHours[project.id] || 0;
+    
     const confirmed = await showCriticalConfirm({
       title: 'Slet sag permanent?',
       message: 'Dette kan ikke fortrydes. Alle data på sagen vil blive slettet.',
@@ -278,28 +312,38 @@ function Sager() {
             {filteredProjects.map((project) => {
               const statusConfig = getStatusConfig(project.status);
               const hours = projectHours[project.id] || 0;
+              const cardColor = getProjectColor(project.id);
               
               return (
                 <div
                   key={project.id}
-                  className="project-card"
-                  style={{ borderLeftColor: statusConfig.color }}
+                  className="project-card-new"
                   onClick={() => handleProjectClick(project)}
                 >
-                  <div className="project-card-header">
-                    <div className="project-status-icon" style={{ color: statusConfig.color }}>
-                      {statusConfig.icon}
+                  {/* Colored Header Block */}
+                  <div className="project-card-header-block" style={{ backgroundColor: cardColor }}>
+                    <div className="project-card-address-main">
+                      <div className="address-street">
+                        {project.streetAddress || 'Adresse ikke angivet'}
+                      </div>
+                      <div className="address-postal">
+                        {project.postalCode && project.city 
+                          ? `${project.postalCode} ${project.city}`
+                          : project.customerAddress || ''}
+                      </div>
                     </div>
-                    <div className="project-card-actions">
+                    
+                    {/* Action buttons in header */}
+                    <div className="project-card-actions-new">
                       <button
-                        className="card-action-btn edit"
+                        className="card-action-btn-new edit"
                         onClick={(e) => handleEditProject(e, project)}
                         title="Ret sag"
                       >
                         ✏️
                       </button>
                       <button
-                        className="card-action-btn delete"
+                        className="card-action-btn-new delete"
                         onClick={(e) => handleDeleteProject(e, project)}
                         title="Slet sag"
                       >
@@ -308,50 +352,41 @@ function Sager() {
                     </div>
                   </div>
 
-                  <div className="project-card-body">
-                    <h3 className="project-card-title">{project.name}</h3>
-                    
-                    {(project.streetAddress || project.postalCode || project.city || project.customerAddress) && (
-                      <p className="project-card-address">
-                        📍 {project.streetAddress && project.postalCode && project.city
-                          ? formatFullAddress(project.streetAddress, project.postalCode, project.city)
-                          : project.customerAddress || 'Adresse ikke angivet'
-                        }
-                      </p>
-                    )}
-                    
-                    <p className="project-card-customer">
-                      <span className="label-subtle">Kunde:</span> {project.customerName || 'Ikke angivet'}
-                    </p>
-                    
-                    <div className="project-card-meta">
-                      <div className="meta-item">
-                        <span className="meta-label">Sagsnr:</span>
-                        <span className="meta-value">{project.projectNumber}</span>
-                      </div>
-                      <div className="meta-item">
-                        <span className="meta-label">Type:</span>
-                        <span className="meta-value">{getTypeLabel(project.type)}</span>
-                      </div>
-                    </div>
+                  {/* Project Name - Below colored block */}
+                  <h3 className="project-card-name">{project.name}</h3>
 
-                    <div className="project-card-footer">
-                      <div className="project-hours">
-                        <span className="hours-icon">⏱️</span>
-                        <span className="hours-value">{hours} timer</span>
-                      </div>
-                      <div className="project-status-badge" style={{ 
-                        backgroundColor: statusConfig.color + '20',
+                  {/* Project Information */}
+                  <div className="project-card-info">
+                    <div className="info-row-new">
+                      <span className="info-label">SAGSNR:</span>
+                      <span className="info-value">{project.projectNumber}</span>
+                    </div>
+                    
+                    <div className="info-row-new">
+                      <span className="info-label">KUNDE:</span>
+                      <span className="info-value">{project.customerName || 'Ikke angivet'}</span>
+                    </div>
+                    
+                    <div className="info-row-new">
+                      <span className="info-label">TYPE:</span>
+                      <span className="info-value">{getTypeLabel(project.type)}</span>
+                    </div>
+                    
+                    <div className="info-row-new">
+                      <span className="info-label">STATUS:</span>
+                      <span className="status-badge-new" style={{ 
+                        backgroundColor: statusConfig.color + '15',
                         color: statusConfig.color,
                         borderColor: statusConfig.color
                       }}>
                         {statusConfig.label}
-                      </div>
+                      </span>
                     </div>
-                  </div>
-
-                  <div className="project-card-hover-indicator">
-                    Se mere →
+                    
+                    <div className="info-row-new">
+                      <span className="info-label">TIMER REGISTRERET:</span>
+                      <span className="info-value hours-value">{hours} Timer</span>
+                    </div>
                   </div>
                 </div>
               );
