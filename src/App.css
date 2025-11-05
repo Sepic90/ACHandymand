@@ -999,7 +999,7 @@ body {
 
 .sag-tabs-colorful {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   gap: 12px;
   margin-bottom: 30px;
 }
@@ -5146,4 +5146,145 @@ body {
 
 /* ============================================
    END OF CLIPART DECORATIONS
+   ============================================ */
+
+/* ============================================
+   MATERIAL MODULE MODALS - IMPROVED STYLING
+   ============================================ */
+
+/* Supplier Modal */
+.supplier-modal {
+  max-width: 650px;
+}
+
+/* Material Modal */
+.material-modal {
+  max-width: 550px;
+}
+
+/* Material Purchase Modal */
+.material-purchase-modal {
+  max-width: 650px;
+}
+
+/* Form Sections with Visual Separation */
+.supplier-modal .form-section,
+.material-modal .form-section,
+.material-purchase-modal .form-section {
+  padding: 20px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  border: 2px solid #e1e8ed;
+  margin-bottom: 20px;
+}
+
+.form-section-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: #2c3e50;
+  margin: 0 0 16px 0;
+  padding-bottom: 12px;
+  border-bottom: 2px solid #e1e8ed;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Form Groups in Material Modals */
+.supplier-modal .form-group,
+.material-modal .form-group,
+.material-purchase-modal .form-group {
+  margin-bottom: 20px;
+}
+
+.supplier-modal .form-group:last-child,
+.material-modal .form-group:last-child,
+.material-purchase-modal .form-group:last-child {
+  margin-bottom: 0;
+}
+
+.supplier-modal .form-group label,
+.material-modal .form-group label,
+.material-purchase-modal .form-group label {
+  display: block;
+  font-size: 14px;
+  font-weight: 600;
+  color: #2c3e50;
+  margin-bottom: 8px;
+}
+
+/* Input Fields in Material Modals */
+.supplier-modal .form-group input,
+.supplier-modal .form-group select,
+.supplier-modal .form-group textarea,
+.material-modal .form-group input,
+.material-modal .form-group select,
+.material-modal .form-group textarea,
+.material-purchase-modal .form-group input,
+.material-purchase-modal .form-group select,
+.material-purchase-modal .form-group textarea {
+  width: 100%;
+  padding: 12px 15px;
+  border: 2px solid #e0e0e0;
+  border-radius: 6px;
+  font-size: 15px;
+  color: #2c3e50;
+  background: white;
+  transition: all 0.2s;
+  font-family: inherit;
+}
+
+.supplier-modal .form-group input:focus,
+.supplier-modal .form-group select:focus,
+.supplier-modal .form-group textarea:focus,
+.material-modal .form-group input:focus,
+.material-modal .form-group select:focus,
+.material-modal .form-group textarea:focus,
+.material-purchase-modal .form-group input:focus,
+.material-purchase-modal .form-group select:focus,
+.material-purchase-modal .form-group textarea:focus {
+  outline: none;
+  border-color: #3498db;
+  box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+}
+
+.supplier-modal .form-group textarea,
+.material-modal .form-group textarea,
+.material-purchase-modal .form-group textarea {
+  resize: vertical;
+  min-height: 80px;
+}
+
+/* Info Boxes */
+.info-box {
+  padding: 16px;
+  background: #e8f5e9;
+  border-left: 4px solid #27ae60;
+  border-radius: 6px;
+  margin-top: 16px;
+}
+
+.info-box-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: #27ae60;
+  margin-bottom: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.info-box-content {
+  font-size: 14px;
+  color: #2c3e50;
+  line-height: 1.6;
+}
+
+/* Modal Form Layout */
+.modal-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+/* ============================================
+   END OF MATERIAL MODULE MODALS
    ============================================ */
