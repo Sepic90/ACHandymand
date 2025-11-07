@@ -147,7 +147,8 @@ function Sager() {
         showSuccess('Sag opdateret!');
       } else {
         // Create new project with project number
-        const nextNumber = await getNextProjectNumber();
+        const currentYear = new Date().getFullYear();
+        const nextNumber = await getNextProjectNumber(currentYear);
         await addDoc(collection(db, 'projects'), {
           ...projectData,
           projectNumber: nextNumber,

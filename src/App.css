@@ -5386,7 +5386,7 @@ body {
 .project-card-name {
   font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
   font-size: 18px;
-  font-weight: 300;
+  font-weight: 600;  /* ✅ MUCH MORE READABLE! */
   color: #2c3e50;
   text-align: center;
   padding: 20px 24px 16px 24px;
