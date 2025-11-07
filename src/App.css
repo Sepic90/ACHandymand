@@ -5557,16 +5557,16 @@ body {
 .calendar-grid {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
-  gap: 8px;
+  gap: 10px;
   margin-bottom: 24px;
 }
 
-/* Calendar Day Cell */
+/* Calendar Day Cell - RECTANGULAR (wider than tall) with better contrast */
 .calendar-day {
-  min-height: 100px;
+  min-height: 80px;
   padding: 10px;
   background: white;
-  border: 2px solid #e1e8ed;
+  border: 2.5px solid #d5dce3;
   border-radius: 10px;
   cursor: pointer;
   transition: all 0.2s;
@@ -5582,8 +5582,8 @@ body {
 }
 
 .calendar-day.empty {
-  background: transparent;
-  border: none;
+  background: #fafbfc;
+  border: 2px solid #ecf0f1;
   cursor: default;
 }
 
@@ -5877,59 +5877,22 @@ body {
 .calendar-grid {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
-  gap: 8px;
+  gap: 10px;
   margin-bottom: 24px;
-  width: 100%;
 }
 
-/* Calendar Day Cell - Rectangular, not square, flexible height */
+/* Calendar Day Cell - RECTANGULAR (wider than tall) with better contrast */
 .calendar-day {
-  min-height: 90px;
-  max-height: 120px;
-  height: auto;
+  min-height: 80px;
   padding: 10px;
   background: white;
-  border: 2px solid #e1e8ed;
+  border: 2.5px solid #d5dce3;
   border-radius: 10px;
   cursor: pointer;
   transition: all 0.2s;
   display: flex;
   flex-direction: column;
   position: relative;
-  overflow: hidden;
-}
-
-/* Larger screens = more vertical space */
-@media (min-width: 1400px) {
-  .calendar-day {
-    min-height: 100px;
-    max-height: 140px;
-  }
-}
-
-@media (min-width: 1800px) {
-  .calendar-day {
-    min-height: 110px;
-    max-height: 160px;
-  }
-}
-
-/* Days from other months (greyed out) */
-.calendar-day.other-month {
-  background: #f8f9fa;
-  border-color: #ecf0f1;
-  cursor: default;
-}
-
-.calendar-day.other-month .calendar-day-number {
-  color: #bdc3c7;
-  font-weight: 500;
-}
-
-.calendar-day.other-month:hover {
-  border-color: #ecf0f1;
-  box-shadow: none;
-  transform: none;
 }
 
 .calendar-day:hover {
@@ -5939,18 +5902,20 @@ body {
 }
 
 .calendar-day.empty {
-  background: transparent;
-  border: none;
+  background: #fafbfc;
+  border: 2px solid #ecf0f1;
   cursor: default;
 }
 
 .calendar-day.empty:hover {
   box-shadow: none;
   transform: none;
+  border-color: #ecf0f1;
 }
 
 .calendar-day.today {
   border-color: #3498db;
+  border-width: 3px;
   background: linear-gradient(135deg, #ebf5fb 0%, #ffffff 100%);
   box-shadow: 0 2px 8px rgba(52, 152, 219, 0.2);
 }
@@ -5965,13 +5930,18 @@ body {
   font-weight: 700;
   color: #2c3e50;
   margin-bottom: 8px;
+  flex-shrink: 0;
 }
 
 .calendar-day.today .calendar-day-number {
   color: #3498db;
 }
 
-/* Event Indicators (Bars with text) */
+.calendar-day.empty .calendar-day-number {
+  color: #bdc3c7;
+}
+
+/* Event Indicators Container */
 .calendar-day-indicators {
   display: flex;
   flex-direction: column;
@@ -5980,22 +5950,25 @@ body {
   width: 100%;
 }
 
+/* Event Banner - FULL WIDTH and CENTERED */
 .calendar-event-bar {
-  padding: 4px 8px;
-  border-radius: 4px;
+  width: 100%;
+  padding: 5px 8px;
+  border-radius: 6px;
   font-size: 11px;
   font-weight: 600;
   color: white;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
   transition: all 0.2s;
+  text-align: center;
 }
 
 .calendar-event-bar:hover {
-  transform: translateX(2px);
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+  transform: scale(1.02);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
 }
 
 .calendar-more-indicator {
@@ -6201,8 +6174,7 @@ body {
 
 @media (max-width: 1200px) {
   .calendar-day {
-    min-height: 80px;
-    max-height: 110px;
+    min-height: 75px;
     padding: 8px;
   }
 
@@ -6216,7 +6188,9 @@ body {
   
   .calendar-event-bar {
     font-size: 10px;
-    padding: 3px 6px;
+    padding: 4px 6px;
+    width: 100%;
+    text-align: center;
   }
 }
 
@@ -6237,7 +6211,6 @@ body {
 
   .calendar-day {
     min-height: 65px;
-    max-height: 90px;
     padding: 6px;
   }
 
@@ -6247,7 +6220,9 @@ body {
 
   .calendar-event-bar {
     font-size: 9px;
-    padding: 2px 4px;
+    padding: 3px 5px;
+    width: 100%;
+    text-align: center;
   }
 
   .calendar-more-indicator {
@@ -6279,22 +6254,24 @@ body {
 
 @media (max-width: 480px) {
   .calendar-grid {
-    gap: 4px;
+    gap: 6px;
   }
 
   .calendar-day {
     min-height: 55px;
-    max-height: 75px;
-    padding: 4px;
+    padding: 5px;
   }
 
   .calendar-day-number {
     font-size: 11px;
+    margin-bottom: 4px;
   }
 
   .calendar-event-bar {
     font-size: 8px;
-    padding: 2px 3px;
+    padding: 2px 4px;
+    width: 100%;
+    text-align: center;
   }
 
   .calendar-day-indicators {

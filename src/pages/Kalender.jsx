@@ -218,7 +218,7 @@ function Kalender() {
     for (let i = firstDay - 1; i >= 0; i--) {
       const day = prevMonthDays - i;
       days.push(
-        <div key={`prev-${day}`} className="calendar-day empty other-month">
+        <div key={`prev-${day}`} className="calendar-day empty">
           <div className="calendar-day-number">{day}</div>
         </div>
       );
@@ -247,9 +247,9 @@ function Kalender() {
                   ? '#f57c00' 
                   : getEmployeeColor(item.employeeIds?.[0] || item.employeeId);
                 
-                // Prepend case number if available
+                // Display with project ID and dash separator
                 const displayTitle = item.sagsnummer 
-                  ? `${item.sagsnummer} ${item.title}`
+                  ? `${item.sagsnummer} - ${item.title}`
                   : item.title;
                 
                 return (
@@ -278,7 +278,7 @@ function Kalender() {
     
     for (let day = 1; day <= remainingCells; day++) {
       days.push(
-        <div key={`next-${day}`} className="calendar-day empty other-month">
+        <div key={`next-${day}`} className="calendar-day empty">
           <div className="calendar-day-number">{day}</div>
         </div>
       );
