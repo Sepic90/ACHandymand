@@ -10,6 +10,7 @@ import Indstillinger from './pages/Indstillinger';
 import Sager from './pages/Sager';
 import SagDetails from './pages/SagDetails';
 import Materialer from './pages/Materialer';
+import Kalender from './pages/Kalender';
 import Layout from './components/Layout';
 import ProtectedRoute from './components/ProtectedRoute';
 import './App.css';
@@ -33,6 +34,7 @@ function App() {
             <Route path="sager" element={<Sager />} />
             <Route path="sager/:id" element={<SagDetails />} />
             <Route path="materialer" element={<Materialer />} />
+            <Route path="kalender" element={<Kalender />} />
             <Route path="timeregistrering" element={<Timeregistrering />} />
             <Route path="indstillinger" element={<Indstillinger />} />
           </Route>

@@ -57,6 +57,12 @@ function Layout() {
             Materialer
           </NavLink>
           <NavLink
+            to="/kalender"
+            className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
+          >
+            Kalender
+          </NavLink>
+          <NavLink
             to="/timeregistrering"
             className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
           >
