@@ -117,7 +117,7 @@ function generateEmployeePage(pdf, year, startMonthIndex, dates, employeeName, l
   
   pdf.setFont('helvetica', 'normal');
   pdf.setFontSize(9);
-  pdf.text('Oversigt over arbejdstimer, sygdom, barnets første sygedag, SH, FE, FF og overarbejde (OA).', margin, yPosition);
+  pdf.text('Oversigt over arbejdstimer, sygdom, BS, SH, FE, FF og overarbejde (OA).', margin, yPosition);
   yPosition += 4;
   
   pdf.setFont('helvetica', 'bold');
