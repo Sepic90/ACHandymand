@@ -209,10 +209,22 @@ function Kalender() {
     const daysInMonth = getDaysInMonth(currentYear, currentMonth);
     const days = [];
 
-    for (let i = 0; i < firstDay; i++) {
-      days.push(<div key={`empty-${i}`} className="calendar-day empty"></div>);
+    // Add days from previous month to fill first week (greyed out)
+    const prevMonthDays = getDaysInMonth(
+      currentMonth === 0 ? currentYear - 1 : currentYear,
+      currentMonth === 0 ? 11 : currentMonth - 1
+    );
+    
+    for (let i = firstDay - 1; i >= 0; i--) {
+      const day = prevMonthDays - i;
+      days.push(
+        <div key={`prev-${day}`} className="calendar-day empty other-month">
+          <div className="calendar-day-number">{day}</div>
+        </div>
+      );
     }
 
+    // Current month days
     for (let day = 1; day <= daysInMonth; day++) {
       const dateString = formatDateDDMMYYYY(new Date(currentYear, currentMonth, day));
       const dayEvents = getEventsForDate(events, dateString);
@@ -235,20 +247,39 @@ function Kalender() {
                   ? '#f57c00' 
                   : getEmployeeColor(item.employeeIds?.[0] || item.employeeId);
                 
+                // Prepend case number if available
+                const displayTitle = item.sagsnummer 
+                  ? `${item.sagsnummer} ${item.title}`
+                  : item.title;
+                
                 return (
                   <div
                     key={idx}
-                    className="calendar-event-dot"
+                    className="calendar-event-bar"
                     style={{ backgroundColor: color }}
-                    title={item.title}
-                  />
+                    title={displayTitle}
+                  >
+                    {displayTitle}
+                  </div>
                 );
               })}
               {allItems.length > 3 && (
-                <span className="calendar-more-indicator">+{allItems.length - 3}</span>
+                <div className="calendar-more-indicator">+{allItems.length - 3} mere</div>
               )}
             </div>
           )}
+        </div>
+      );
+    }
+
+    // Add days from next month to fill last week (greyed out)
+    const totalCells = days.length;
+    const remainingCells = totalCells % 7 === 0 ? 0 : 7 - (totalCells % 7);
+    
+    for (let day = 1; day <= remainingCells; day++) {
+      days.push(
+        <div key={`next-${day}`} className="calendar-day empty other-month">
+          <div className="calendar-day-number">{day}</div>
         </div>
       );
     }
