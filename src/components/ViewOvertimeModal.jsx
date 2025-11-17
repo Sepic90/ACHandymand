@@ -1,36 +1,32 @@
 import React, { useState, useEffect } from 'react';
-import { getEmployeeAbsences, deleteAbsence, updateAbsence, parseDate, formatDate } from '../utils/absenceUtils';
+import { getEmployeeOvertime, deleteOvertime, updateOvertime, parseDate, formatDate } from '../utils/overtimeUtils';
 import { useNotification } from '../utils/notificationUtils';
 
-function ViewAbsenceModal({ employee, onClose, onSuccess }) {
+function ViewOvertimeModal({ employee, onClose, onSuccess }) {
   const { showSuccess, showError, showWarning, showConfirm } = useNotification();
   const [currentMonth, setCurrentMonth] = useState(new Date().getMonth());
   const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
-  const [absences, setAbsences] = useState([]);
+  const [overtime, setOvertime] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [selectedAbsence, setSelectedAbsence] = useState(null);
+  const [selectedOvertime, setSelectedOvertime] = useState(null);
   const [editMode, setEditMode] = useState(false);
 
   const [editDate, setEditDate] = useState('');
-  const [editEndDate, setEditEndDate] = useState('');
-  const [editReason, setEditReason] = useState('');
+  const [editHours, setEditHours] = useState('');
   const [editComment, setEditComment] = useState('');
-  const [editHoursWorked, setEditHoursWorked] = useState('');
 
-  // UPDATED: Added "Barn sygedag" and renamed "Helligdag" to "Søgnehelligdag"
-  const absenceReasons = ['Feriedag', 'Feriefridag', 'Barn sygedag', 'Sygedag', 'Søgnehelligdag', 'Andet'];
   const monthNames = ['Januar', 'Februar', 'Marts', 'April', 'Maj', 'Juni', 
                       'Juli', 'August', 'September', 'Oktober', 'November', 'December'];
 
   useEffect(() => {
-    loadAbsences();
+    loadOvertime();
   }, []);
 
-  const loadAbsences = async () => {
+  const loadOvertime = async () => {
     setLoading(true);
-    const result = await getEmployeeAbsences(employee.id);
+    const result = await getEmployeeOvertime(employee.id);
     if (result.success) {
-      setAbsences(result.absences);
+      setOvertime(result.overtime);
     }
     setLoading(false);
   };
@@ -60,53 +56,40 @@ function ViewAbsenceModal({ employee, onClose, onSuccess }) {
     return day === 0 ? 6 : day - 1;
   };
 
-  const getAbsencesForDate = (day) => {
+  const getOvertimeForDate = (day) => {
     const dateString = `${String(day).padStart(2, '0')}/${String(currentMonth + 1).padStart(2, '0')}/${currentYear}`;
-    
-    return absences.filter(absence => {
-      if (absence.type === 'extended' && absence.endDate) {
-        const start = parseDate(absence.date);
-        const end = parseDate(absence.endDate);
-        const check = parseDate(dateString);
-        return check >= start && check <= end;
-      }
-      return absence.date === dateString;
-    });
+    return overtime.filter(ot => ot.date === dateString);
   };
 
   const handleDateClick = (day) => {
-    const dayAbsences = getAbsencesForDate(day);
-    if (dayAbsences.length > 0) {
-      setSelectedAbsence(dayAbsences[0]);
+    const dayOvertime = getOvertimeForDate(day);
+    if (dayOvertime.length > 0) {
+      setSelectedOvertime(dayOvertime[0]);
       setEditMode(false);
     }
   };
 
   const handleEdit = () => {
-    if (!selectedAbsence) return;
+    if (!selectedOvertime) return;
     
-    const dateObj = parseDate(selectedAbsence.date);
+    const dateObj = parseDate(selectedOvertime.date);
     const isoDate = dateObj.toISOString().split('T')[0];
     
     setEditDate(isoDate);
-    setEditReason(selectedAbsence.absenceReason);
-    setEditComment(selectedAbsence.comment || '');
-    setEditHoursWorked(selectedAbsence.hoursWorked || '');
-    
-    if (selectedAbsence.endDate) {
-      const endDateObj = parseDate(selectedAbsence.endDate);
-      const isoEndDate = endDateObj.toISOString().split('T')[0];
-      setEditEndDate(isoEndDate);
-    } else {
-      setEditEndDate('');
-    }
+    setEditHours(selectedOvertime.hours.toString());
+    setEditComment(selectedOvertime.comment || '');
     
     setEditMode(true);
   };
 
   const handleSaveEdit = async () => {
-    if (!editDate || !editReason) {
+    if (!editDate || !editHours) {
       showWarning('Udfyld alle påkrævede felter.');
+      return;
+    }
+
+    if (parseFloat(editHours) <= 0) {
+      showWarning('Timer skal være større end 0.');
       return;
     }
 
@@ -117,40 +100,31 @@ function ViewAbsenceModal({ employee, onClose, onSuccess }) {
 
     const updateData = {
       date: formattedDate,
-      absenceReason: editReason,
+      hours: parseFloat(editHours),
       comment: editComment
     };
 
-    if (selectedAbsence.type === 'partial') {
-      updateData.hoursWorked = parseFloat(editHoursWorked);
-    }
-
-    if (selectedAbsence.type === 'extended' && editEndDate) {
-      const endDateObj = new Date(editEndDate);
-      updateData.endDate = formatDate(endDateObj);
-    }
-
-    const result = await updateAbsence(selectedAbsence.id, updateData);
+    const result = await updateOvertime(selectedOvertime.id, updateData);
 
     if (result.success) {
-      showSuccess('Fravær opdateret!');
-      await loadAbsences();
-      setSelectedAbsence(null);
+      showSuccess('Overarbejde opdateret!');
+      await loadOvertime();
+      setSelectedOvertime(null);
       setEditMode(false);
       onSuccess();
     } else {
-      showError('Fejl ved opdatering af fravær.');
+      showError('Fejl ved opdatering af overarbejde.');
     }
 
     setLoading(false);
   };
 
   const handleDelete = async () => {
-    if (!selectedAbsence) return;
+    if (!selectedOvertime) return;
 
     const confirmed = await showConfirm({
-      title: 'Slet fravær',
-      message: 'Er du sikker på at du vil slette dette fravær?',
+      title: 'Slet overarbejde',
+      message: 'Er du sikker på at du vil slette denne overarbejdsregistrering?',
       confirmText: 'Slet',
       cancelText: 'Annuller'
     });
@@ -159,16 +133,16 @@ function ViewAbsenceModal({ employee, onClose, onSuccess }) {
 
     setLoading(true);
 
-    const result = await deleteAbsence(selectedAbsence.id);
+    const result = await deleteOvertime(selectedOvertime.id);
 
     if (result.success) {
-      showSuccess('Fravær slettet!');
-      await loadAbsences();
-      setSelectedAbsence(null);
+      showSuccess('Overarbejde slettet!');
+      await loadOvertime();
+      setSelectedOvertime(null);
       setEditMode(false);
       onSuccess();
     } else {
-      showError('Fejl ved sletning af fravær.');
+      showError('Fejl ved sletning af overarbejde.');
     }
 
     setLoading(false);
@@ -184,19 +158,19 @@ function ViewAbsenceModal({ employee, onClose, onSuccess }) {
     }
 
     for (let day = 1; day <= daysInMonth; day++) {
-      const dayAbsences = getAbsencesForDate(day);
-      const hasAbsence = dayAbsences.length > 0;
+      const dayOvertime = getOvertimeForDate(day);
+      const hasOvertime = dayOvertime.length > 0;
 
       days.push(
         <div 
           key={day} 
-          className={`calendar-day ${hasAbsence ? 'has-absence' : ''}`}
+          className={`calendar-day ${hasOvertime ? 'has-absence' : ''}`}
           onClick={() => handleDateClick(day)}
         >
           <div className="calendar-day-number">{day}</div>
-          {hasAbsence && (
-            <div className="calendar-absence-indicator">
-              {dayAbsences[0].absenceReason.substring(0, 3)}
+          {hasOvertime && (
+            <div className="calendar-absence-indicator" style={{ background: '#3498db' }}>
+              OA: {dayOvertime[0].hours}t
             </div>
           )}
         </div>
@@ -210,7 +184,7 @@ function ViewAbsenceModal({ employee, onClose, onSuccess }) {
     <div className="modal-overlay">
       <div className="modal-content modal-large" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
-          <h2>Se / rediger fravær - {employee.name}</h2>
+          <h2>Se / rediger overarbejde - {employee.name}</h2>
           <button className="modal-close" onClick={onClose}>×</button>
         </div>
 
@@ -252,24 +226,18 @@ function ViewAbsenceModal({ employee, onClose, onSuccess }) {
                 </div>
               </div>
 
-              {selectedAbsence && !editMode && (
+              {selectedOvertime && !editMode && (
                 <div className="absence-details">
-                  <h4>Fraværsdetaljer</h4>
+                  <h4>Overarbejde detaljer</h4>
                   <div className="detail-row">
-                    <strong>Dato:</strong> {selectedAbsence.date}
-                    {selectedAbsence.endDate && ` til ${selectedAbsence.endDate}`}
+                    <strong>Dato:</strong> {selectedOvertime.date}
                   </div>
                   <div className="detail-row">
-                    <strong>Type:</strong> {selectedAbsence.absenceReason}
+                    <strong>Timer:</strong> {selectedOvertime.hours} timer
                   </div>
-                  {selectedAbsence.hoursWorked !== undefined && (
+                  {selectedOvertime.comment && (
                     <div className="detail-row">
-                      <strong>Arbejdstimer:</strong> {selectedAbsence.hoursWorked}
-                    </div>
-                  )}
-                  {selectedAbsence.comment && (
-                    <div className="detail-row">
-                      <strong>Kommentar:</strong> {selectedAbsence.comment}
+                      <strong>Kommentar:</strong> {selectedOvertime.comment}
                     </div>
                   )}
                   <div className="detail-actions">
@@ -283,9 +251,9 @@ function ViewAbsenceModal({ employee, onClose, onSuccess }) {
                 </div>
               )}
 
-              {selectedAbsence && editMode && (
+              {selectedOvertime && editMode && (
                 <div className="absence-edit-form">
-                  <h4>Rediger fravær</h4>
+                  <h4>Rediger overarbejde</h4>
                   
                   <div className="form-group">
                     <label>Dato *</label>
@@ -297,45 +265,18 @@ function ViewAbsenceModal({ employee, onClose, onSuccess }) {
                     />
                   </div>
 
-                  {selectedAbsence.type === 'extended' && (
-                    <div className="form-group">
-                      <label>Slut dato *</label>
-                      <input 
-                        type="date" 
-                        value={editEndDate}
-                        onChange={(e) => setEditEndDate(e.target.value)}
-                        required
-                      />
-                    </div>
-                  )}
-
                   <div className="form-group">
-                    <label>Type af fravær *</label>
-                    <select 
-                      value={editReason}
-                      onChange={(e) => setEditReason(e.target.value)}
+                    <label>Antal timer *</label>
+                    <input 
+                      type="number" 
+                      value={editHours}
+                      onChange={(e) => setEditHours(e.target.value)}
+                      step="0.5"
+                      min="0.5"
+                      max="24"
                       required
-                    >
-                      {absenceReasons.map(reason => (
-                        <option key={reason} value={reason}>{reason}</option>
-                      ))}
-                    </select>
+                    />
                   </div>
-
-                  {selectedAbsence.type === 'partial' && (
-                    <div className="form-group">
-                      <label>Arbejdstimer *</label>
-                      <input 
-                        type="number" 
-                        value={editHoursWorked}
-                        onChange={(e) => setEditHoursWorked(e.target.value)}
-                        step="0.5"
-                        min="0"
-                        max="24"
-                        required
-                      />
-                    </div>
-                  )}
 
                   <div className="form-group">
                     <label>Kommentar (valgfri)</label>
@@ -364,4 +305,4 @@ function ViewAbsenceModal({ employee, onClose, onSuccess }) {
   );
 }
 
-export default ViewAbsenceModal;
+export default ViewOvertimeModal;

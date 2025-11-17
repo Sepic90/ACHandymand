@@ -1,6 +1,7 @@
 import jsPDF from 'jspdf';
 import { generateDateRange, getMonthPairLabel, getYearLabel } from './dateUtils';
 import { getAbsencesForDateRange, findAbsenceForDate, calculateWorkHours, getAbsenceComment } from './absenceUtils';
+import { getOvertimeForDateRange, getOvertimeHours } from './overtimeUtils';
 
 /**
  * Generate timesheet PDF for one or more employees
@@ -57,7 +58,7 @@ export async function generateTimesheetPDF(year, startMonthIndex, employeeNames,
       console.log('Absences:', absences.map(a => `${a.date} (${a.absenceReason})`).join(', '));
     }
     
-    generateEmployeePage(pdf, year, startMonthIndex, dates, employee.name, logoData, absences);
+    await generateEmployeePage(pdf, year, startMonthIndex, dates, employee.name, employee.id, logoData, absences, firstDate, lastDate);
   }
   
   const monthPairLabel = getMonthPairLabel(startMonthIndex);
@@ -72,10 +73,16 @@ export async function generateTimesheetPDF(year, startMonthIndex, employeeNames,
 /**
  * Generate a single page for an employee
  */
-function generateEmployeePage(pdf, year, startMonthIndex, dates, employeeName, logoData, absences) {
+async function generateEmployeePage(pdf, year, startMonthIndex, dates, employeeName, employeeId, logoData, absences, firstDate, lastDate) {
   const pageWidth = pdf.internal.pageSize.getWidth();
   const pageHeight = pdf.internal.pageSize.getHeight();
   const margin = 15;
+  
+  // Load overtime data
+  console.log(`Loading overtime for ${employeeName} (ID: ${employeeId})`);
+  const overtimeResult = await getOvertimeForDateRange(employeeId, firstDate, lastDate);
+  const overtime = overtimeResult.success ? overtimeResult.overtime : [];
+  console.log(`Found ${overtime.length} overtime entries for ${employeeName}`);
   
   let yPosition = margin;
   
@@ -127,7 +134,7 @@ function generateEmployeePage(pdf, year, startMonthIndex, dates, employeeName, l
   
   yPosition += 8;
   
-  drawTable(pdf, margin, yPosition, pageWidth - 2 * margin, dates, absences);
+  drawTable(pdf, margin, yPosition, pageWidth - 2 * margin, dates, absences, overtime);
   
   const signatureY = pageHeight - 25;
   const signatureWidth = pageWidth / 3;
@@ -148,7 +155,7 @@ function generateEmployeePage(pdf, year, startMonthIndex, dates, employeeName, l
 /**
  * Draw the timesheet table
  */
-function drawTable(pdf, x, y, width, dates, absences) {
+function drawTable(pdf, x, y, width, dates, absences, overtime) {
   const startY = y;
   
   const columns = [
@@ -192,6 +199,7 @@ function drawTable(pdf, x, y, width, dates, absences) {
   y += headerHeight;
   
   let totalWorkHours = 0;
+  let totalOvertimeHours = 0;
   let absenceMatchCount = 0;
   
   pdf.setFont('helvetica', 'normal');
@@ -202,7 +210,8 @@ function drawTable(pdf, x, y, width, dates, absences) {
     
     const absence = findAbsenceForDate(absences, dateInfo.formattedDate);
     const workHours = calculateWorkHours(dateInfo.formattedDate, dateInfo.weekday, absences);
-    const absenceComment = getAbsenceComment(dateInfo.formattedDate, absences);
+    const absenceComment = getAbsenceComment(dateInfo.formattedDate, dateInfo.weekday, absences);
+    const overtimeHours = getOvertimeHours(dateInfo.formattedDate, overtime);
     
     if (absence) {
       absenceMatchCount++;
@@ -211,6 +220,7 @@ function drawTable(pdf, x, y, width, dates, absences) {
     
     if (!dateInfo.isWeekend) {
       totalWorkHours += workHours.minusLunch;
+      totalOvertimeHours += overtimeHours;
     }
     
     columns.forEach((col, colIndex) => {
@@ -263,6 +273,11 @@ function drawTable(pdf, x, y, width, dates, absences) {
         } else {
           cellText = '0';
         }
+      } else if (colIndex === 7 && !dateInfo.isWeekend) {
+        // OA column - show overtime hours
+        if (overtimeHours > 0) {
+          cellText = overtimeHours.toString().replace('.', ',');
+        }
       }
       
       if (cellText) {
@@ -289,12 +304,13 @@ function drawTable(pdf, x, y, width, dates, absences) {
   });
   
   console.log(`Total absence matches in PDF table: ${absenceMatchCount}`);
+  console.log(`Total overtime hours: ${totalOvertimeHours}`);
   
   // Fixed total row
   currentX = x;
   
   columns.forEach((col, colIndex) => {
-    if (colIndex === 5 || colIndex === 6) {
+    if (colIndex === 5 || colIndex === 6 || colIndex === 7) {
       pdf.rect(currentX, y, col.width, rowHeight);
     }
     
@@ -309,6 +325,14 @@ function drawTable(pdf, x, y, width, dates, absences) {
       const totalText = totalWorkHours.toString().replace('.', ',');
       const centerX = currentX + col.width / 2;
       pdf.text(totalText, centerX, y + rowHeight / 2 + 1.5, { align: 'center' });
+      pdf.setFont('helvetica', 'normal');
+    } else if (colIndex === 7) {
+      pdf.setFont('helvetica', 'bold');
+      if (totalOvertimeHours > 0) {
+        const totalText = totalOvertimeHours.toString().replace('.', ',');
+        const centerX = currentX + col.width / 2;
+        pdf.text(totalText, centerX, y + rowHeight / 2 + 1.5, { align: 'center' });
+      }
       pdf.setFont('helvetica', 'normal');
     }
     

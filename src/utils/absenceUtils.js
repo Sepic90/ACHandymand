@@ -6,8 +6,7 @@ import {
   doc, 
   getDocs, 
   query, 
-  where,
-  orderBy 
+  where
 } from 'firebase/firestore';
 import { db } from '../services/firebase';
 
@@ -21,7 +20,7 @@ import { db } from '../services/firebase';
  * - employeeName: string (required) - Denormalized for easy display
  * - date: string (required) - Format: DD/MM/YYYY
  * - type: string (required) - "partial" | "single" | "extended"
- * - absenceReason: string (required) - "Feriedag" | "Feriefridag" | "Syg" | "Helligdag" | "Andet"
+ * - absenceReason: string (required) - "Feriedag" | "Feriefridag" | "Barn sygedag" | "Sygedag" | "Søgnehelligdag" | "Andet"
  * - hoursWorked: number (optional) - For partial absence only
  * - endDate: string (optional) - Format: DD/MM/YYYY - For extended absence only
  * - comment: string (optional) - Optional note
@@ -67,11 +66,11 @@ export async function createAbsence(absenceData) {
 /**
  * Update an existing absence record
  */
-export async function updateAbsence(absenceId, absenceData) {
+export async function updateAbsence(absenceId, updateData) {
   try {
     const absenceRef = doc(db, 'absences', absenceId);
     await updateDoc(absenceRef, {
-      ...absenceData,
+      ...updateData,
       updatedAt: new Date().toISOString()
     });
     return { success: true };
@@ -101,12 +100,12 @@ export async function getEmployeeAbsences(employeeId) {
   try {
     const q = query(
       collection(db, 'absences'),
-      where('employeeId', '==', employeeId),
-      orderBy('date', 'asc')
+      where('employeeId', '==', employeeId)
     );
     
     const querySnapshot = await getDocs(q);
     const absences = [];
+    
     querySnapshot.forEach((doc) => {
       absences.push({ id: doc.id, ...doc.data() });
     });
@@ -119,7 +118,7 @@ export async function getEmployeeAbsences(employeeId) {
 }
 
 /**
- * Get all absences for a specific month and year
+ * Get absences for a specific month
  */
 export async function getAbsencesForMonth(employeeId, month, year) {
   try {
@@ -261,17 +260,46 @@ export function calculateWorkHours(dateString, weekday, absences) {
 }
 
 /**
- * Get absence comment for PDF
+ * Get absence comment for PDF with special formatting
  */
-export function getAbsenceComment(dateString, absences) {
+export function getAbsenceComment(dateString, weekday, absences) {
   const absence = findAbsenceForDate(absences, dateString);
   
   if (!absence) {
     return '';
   }
   
-  let comment = absence.absenceReason;
-  if (absence.comment) {
+  // Calculate standard hours for the weekday
+  const standardHours = weekday === 'Fredag' ? 7 : 7.5;
+  
+  let comment = '';
+  
+  // Special formatting based on absence reason
+  switch (absence.absenceReason) {
+    case 'Feriefridag':
+      comment = 'Feriefri (FF) 1500 Kr.';
+      break;
+      
+    case 'Søgnehelligdag':
+      comment = 'Søgnehelligdag (SH) 1500 Kr.';
+      break;
+      
+    case 'Barn sygedag':
+      comment = `Barn sygedag: ${standardHours.toString().replace('.', ',')} timer`;
+      break;
+      
+    case 'Sygedag':
+      comment = `Sygedag: ${standardHours.toString().replace('.', ',')} timer`;
+      break;
+      
+    default:
+      // For other types (Feriedag, Andet) just use the reason
+      comment = absence.absenceReason;
+      break;
+  }
+  
+  // Add optional comment if exists (except for special formatted types)
+  if (absence.comment && !['Feriefridag', 'Søgnehelligdag', 'Barn sygedag', 'Sygedag'].includes(absence.absenceReason)) {
     comment += ` - ${absence.comment}`;
   }
   

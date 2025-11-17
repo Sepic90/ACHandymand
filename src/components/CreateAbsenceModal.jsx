@@ -14,7 +14,8 @@ function CreateAbsenceModal({ employee, employees, onClose, onSuccess }) {
   const [endDate, setEndDate] = useState('');
   const [applyToAll, setApplyToAll] = useState(false);
 
-  const absenceReasons = ['Feriedag', 'Feriefridag', 'Syg', 'Helligdag', 'Andet'];
+  // UPDATED: Added "Barn sygedag" and renamed "Helligdag" to "Søgnehelligdag"
+  const absenceReasons = ['Feriedag', 'Feriefridag', 'Barn sygedag', 'Sygedag', 'Søgnehelligdag', 'Andet'];
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -96,43 +97,42 @@ function CreateAbsenceModal({ employee, employees, onClose, onSuccess }) {
     } catch (error) {
       console.error('Error creating absence:', error);
       showError('Der opstod en fejl.');
-    } finally {
-      setLoading(false);
     }
+
+    setLoading(false);
   };
 
   return (
-    <div className="modal-overlay">
+    <div className="modal-overlay" onClick={onClose}>
       <div className="modal-content" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
-          <h2>Opret fravær - {employee.name}</h2>
+          <h2>Opret fravær for {employee.name}</h2>
           <button className="modal-close" onClick={onClose}>×</button>
         </div>
 
-        <div className="absence-tabs">
-          <button 
-            className={`absence-tab ${activeTab === 'partial' ? 'active' : ''}`}
-            onClick={() => setActiveTab('partial')}
-          >
-            Delvist fravær
-          </button>
-          <button 
-            className={`absence-tab ${activeTab === 'single' ? 'active' : ''}`}
-            onClick={() => setActiveTab('single')}
-          >
-            Enkelte fraværsdage
-          </button>
-          <button 
-            className={`absence-tab ${activeTab === 'extended' ? 'active' : ''}`}
-            onClick={() => setActiveTab('extended')}
-          >
-            Længere fravær
-          </button>
-        </div>
+        <div className="modal-body">
+          <div className="tabs">
+            <button 
+              className={`tab ${activeTab === 'partial' ? 'active' : ''}`}
+              onClick={() => setActiveTab('partial')}
+            >
+              Delvis fravær
+            </button>
+            <button 
+              className={`tab ${activeTab === 'single' ? 'active' : ''}`}
+              onClick={() => setActiveTab('single')}
+            >
+              Hel dag
+            </button>
+            <button 
+              className={`tab ${activeTab === 'extended' ? 'active' : ''}`}
+              onClick={() => setActiveTab('extended')}
+            >
+              Længere periode
+            </button>
+          </div>
 
-        <form onSubmit={handleSubmit}>
-          <div className="modal-body">
-            
+          <form onSubmit={handleSubmit}>
             {activeTab === 'partial' && (
               <>
                 <div className="form-group">
@@ -146,15 +146,27 @@ function CreateAbsenceModal({ employee, employees, onClose, onSuccess }) {
                 </div>
 
                 <div className="form-group">
-                  <label>Antal arbejdstimer *</label>
+                  <label>Type af fravær *</label>
+                  <select 
+                    value={absenceReason}
+                    onChange={(e) => setAbsenceReason(e.target.value)}
+                    required
+                  >
+                    {absenceReasons.map(reason => (
+                      <option key={reason} value={reason}>{reason}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="form-group">
+                  <label>Arbejdstimer (den dag) *</label>
                   <input 
                     type="number" 
-                    step="0.5"
-                    min="0"
-                    max="12"
                     value={hoursWorked}
                     onChange={(e) => setHoursWorked(e.target.value)}
-                    placeholder="f.eks. 4"
+                    step="0.5"
+                    min="0"
+                    max="24"
                     required
                   />
                   <span className="form-hint">Indtast hvor mange timer der blev arbejdet</span>
@@ -203,20 +215,18 @@ function CreateAbsenceModal({ employee, employees, onClose, onSuccess }) {
                     type="text" 
                     value={comment}
                     onChange={(e) => setComment(e.target.value)}
-                    placeholder="f.eks. Betalt ferie"
+                    placeholder="f.eks. Lægebesøg"
                   />
                 </div>
 
-                <div className="checkbox-group">
+                <div className="checkbox-group" style={{ marginTop: '15px' }}>
                   <input
                     type="checkbox"
                     id="applyToAll"
                     checked={applyToAll}
                     onChange={(e) => setApplyToAll(e.target.checked)}
                   />
-                  <label htmlFor="applyToAll" className="checkbox-label">
-                    Lukkedag - tilføj fravær på alle medarbejdere
-                  </label>
+                  <label htmlFor="applyToAll">Lukkedag - Anvend til alle medarbejdere</label>
                 </div>
               </>
             )}
@@ -262,32 +272,31 @@ function CreateAbsenceModal({ employee, employees, onClose, onSuccess }) {
                     type="text" 
                     value={comment}
                     onChange={(e) => setComment(e.target.value)}
-                    placeholder="f.eks. Sommerferie"
+                    placeholder="f.eks. Ferie i Spanien"
                   />
                 </div>
               </>
             )}
 
-          </div>
-
-          <div className="modal-footer">
-            <button 
-              type="button" 
-              className="btn-secondary" 
-              onClick={onClose}
-              disabled={loading}
-            >
-              Annuller
-            </button>
-            <button 
-              type="submit" 
-              className="btn-primary"
-              disabled={loading}
-            >
-              {loading ? 'Gemmer...' : 'Gem fravær'}
-            </button>
-          </div>
-        </form>
+            <div className="modal-actions">
+              <button 
+                type="button" 
+                className="btn-secondary" 
+                onClick={onClose}
+                disabled={loading}
+              >
+                Annuller
+              </button>
+              <button 
+                type="submit" 
+                className="btn-primary"
+                disabled={loading}
+              >
+                {loading ? 'Opretter...' : 'Opret fravær'}
+              </button>
+            </div>
+          </form>
+        </div>
       </div>
     </div>
   );

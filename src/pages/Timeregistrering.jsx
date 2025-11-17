@@ -6,6 +6,8 @@ import { generateTimesheetPDF } from '../utils/pdfGenerator';
 import { useNotification } from '../utils/notificationUtils';
 import CreateAbsenceModal from '../components/CreateAbsenceModal';
 import ViewAbsenceModal from '../components/ViewAbsenceModal';
+import CreateOvertimeModal from '../components/CreateOvertimeModal';
+import ViewOvertimeModal from '../components/ViewOvertimeModal';
 
 function Timeregistrering() {
   const { showError, showWarning } = useNotification();
@@ -17,9 +19,15 @@ function Timeregistrering() {
   const [loading, setLoading] = useState(false);
   const [generating, setGenerating] = useState(false);
 
+  // Absence modals
   const [showCreateAbsence, setShowCreateAbsence] = useState(false);
   const [showViewAbsence, setShowViewAbsence] = useState(false);
   const [selectedEmployeeForAbsence, setSelectedEmployeeForAbsence] = useState(null);
+
+  // Overtime modals
+  const [showCreateOvertime, setShowCreateOvertime] = useState(false);
+  const [showViewOvertime, setShowViewOvertime] = useState(false);
+  const [selectedEmployeeForOvertime, setSelectedEmployeeForOvertime] = useState(null);
 
   const monthPairs = generateMonthPairs();
   const years = Array.from({ length: 10 }, (_, i) => new Date().getFullYear() - 2 + i);
@@ -87,18 +95,32 @@ function Timeregistrering() {
     // Refresh is handled in the modals
   };
 
+  const handleCreateOvertime = (employee) => {
+    setSelectedEmployeeForOvertime(employee);
+    setShowCreateOvertime(true);
+  };
+
+  const handleViewOvertime = (employee) => {
+    setSelectedEmployeeForOvertime(employee);
+    setShowViewOvertime(true);
+  };
+
+  const handleOvertimeSuccess = () => {
+    // Refresh is handled in the modals
+  };
+
   return (
     <div>
- 	  <div className="page-header">
-	    <h1>Timeregistrering</h1>
-	    <p>Generér timeregistreringsformularer for medarbejdere</p>
-	    <img 
-		  src="/worker.png" 
-		  alt="" 
-		  className="page-header-clipart clipart-timeregistrering"
-		  aria-hidden="true"
-	    />
-	  </div>
+      <div className="page-header">
+        <h1>Timeregistrering</h1>
+        <p>Generér timeregistreringsformularer for medarbejdere</p>
+        <img 
+          src="/worker.png" 
+          alt="" 
+          className="page-header-clipart clipart-timeregistrering"
+          aria-hidden="true"
+        />
+      </div>
 
       <div className="content-card">
         <h3 style={{ marginBottom: '20px' }}>Generér PDF</h3>
@@ -180,7 +202,7 @@ function Timeregistrering() {
       </div>
 
       <div className="content-card" style={{ marginTop: '30px' }}>
-        <h3 style={{ marginBottom: '20px' }}>Fravær og sygdom</h3>
+        <h3 style={{ marginBottom: '20px' }}>Timer og fravær</h3>
         
         {loading ? (
           <p>Indlæser medarbejdere...</p>
@@ -206,6 +228,18 @@ function Timeregistrering() {
                   >
                     Se / rediger fravær
                   </button>
+                  <button 
+                    className="btn-primary btn-small"
+                    onClick={() => handleCreateOvertime(employee)}
+                  >
+                    Registrer overarbejde
+                  </button>
+                  <button 
+                    className="btn-secondary btn-small"
+                    onClick={() => handleViewOvertime(employee)}
+                  >
+                    Se / rediger overarbejde
+                  </button>
                 </div>
               </div>
             ))}
@@ -227,6 +261,22 @@ function Timeregistrering() {
           employee={selectedEmployeeForAbsence}
           onClose={() => setShowViewAbsence(false)}
           onSuccess={handleAbsenceSuccess}
+        />
+      )}
+
+      {showCreateOvertime && selectedEmployeeForOvertime && (
+        <CreateOvertimeModal
+          employee={selectedEmployeeForOvertime}
+          onClose={() => setShowCreateOvertime(false)}
+          onSuccess={handleOvertimeSuccess}
+        />
+      )}
+
+      {showViewOvertime && selectedEmployeeForOvertime && (
+        <ViewOvertimeModal
+          employee={selectedEmployeeForOvertime}
+          onClose={() => setShowViewOvertime(false)}
+          onSuccess={handleOvertimeSuccess}
         />
       )}
     </div>
