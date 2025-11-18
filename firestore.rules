@@ -7,6 +7,16 @@ service cloud.firestore {
       allow read, write: if request.auth != null;
     }
     
+    // Absences collection - only authenticated users can read/write
+    match /absences/{absenceId} {
+      allow read, write: if request.auth != null;
+    }
+    
+    // Overtime collection - only authenticated users can read/write
+    match /overtime/{overtimeId} {
+      allow read, write: if request.auth != null;
+    }
+    
     // Projects collection - only authenticated users can read/write
     match /projects/{projectId} {
       allow read, write: if request.auth != null;
