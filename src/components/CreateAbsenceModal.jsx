@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { createAbsence, createAbsenceForAllEmployees, formatDate } from '../utils/absenceUtils';
+import { createAbsence, formatDate } from '../utils/absenceUtils';
 import { useNotification } from '../utils/notificationUtils';
 
 function CreateAbsenceModal({ employee, employees, onClose, onSuccess }) {
@@ -14,7 +14,6 @@ function CreateAbsenceModal({ employee, employees, onClose, onSuccess }) {
   const [endDate, setEndDate] = useState('');
   const [applyToAll, setApplyToAll] = useState(false);
 
-  // UPDATED: Added "Barn sygedag" and renamed "Helligdag" to "Søgnehelligdag"
   const absenceReasons = ['Feriedag', 'Feriefridag', 'Barn sygedag', 'Sygedag', 'Søgnehelligdag', 'Andet'];
 
   const handleSubmit = async (e) => {
@@ -50,44 +49,60 @@ function CreateAbsenceModal({ employee, employees, onClose, onSuccess }) {
       const dateObj = new Date(date);
       const formattedDate = formatDate(dateObj);
       
-      const absenceData = {
-        employeeId: employee.id,
-        employeeName: employee.name,
-        date: formattedDate,
-        type: activeTab,
-        absenceReason,
-        comment: comment || ''
-      };
-
-      if (activeTab === 'partial') {
-        absenceData.hoursWorked = parseFloat(hoursWorked);
-      }
-
-      if (activeTab === 'extended') {
-        const endDateObj = new Date(endDate);
-        absenceData.endDate = formatDate(endDateObj);
-      }
-
       if (applyToAll && activeTab === 'single') {
-        const result = await createAbsenceForAllEmployees(employees, {
+        // Apply to all employees
+        const promises = employees.map(emp => {
+          const absenceData = {
+            employeeId: emp.id,
+            employeeName: emp.name,
+            date: formattedDate,
+            type: activeTab,
+            absenceReason,
+            comment: comment || ''
+          };
+          
+          // Pass employee data for SH accumulation
+          return createAbsence(absenceData, emp);
+        });
+
+        await Promise.all(promises);
+        showSuccess('Fravær oprettet for alle medarbejdere!');
+        onSuccess();
+        onClose();
+      } else {
+        // Single employee
+        const absenceData = {
+          employeeId: employee.id,
+          employeeName: employee.name,
           date: formattedDate,
           type: activeTab,
           absenceReason,
           comment: comment || ''
-        });
+        };
 
-        if (result.success) {
-          showSuccess('Fravær oprettet for alle medarbejdere!');
-          onSuccess();
-          onClose();
-        } else {
-          showError('Fejl ved oprettelse af fravær for alle medarbejdere.');
+        if (activeTab === 'partial') {
+          absenceData.hoursWorked = parseFloat(hoursWorked);
         }
-      } else {
-        const result = await createAbsence(absenceData);
+
+        if (activeTab === 'extended') {
+          const endDateObj = new Date(endDate);
+          absenceData.endDate = formatDate(endDateObj);
+        }
+
+        // Pass employee data for SH accumulation
+        const result = await createAbsence(absenceData, employee);
 
         if (result.success) {
-          showSuccess('Fravær oprettet!');
+          let message = 'Fravær oprettet!';
+          
+          // Add SH notification if applicable
+          if (absenceReason === 'Søgnehelligdag' && employee.internalHourlyRate) {
+            message += ' SH-akkumulering registreret automatisk.';
+          } else if (absenceReason === 'Søgnehelligdag' && !employee.internalHourlyRate) {
+            message += ' Bemærk: Medarbejderen har ingen intern timepris - SH ikke beregnet.';
+          }
+          
+          showSuccess(message);
           onSuccess();
           onClose();
         } else {
@@ -128,11 +143,11 @@ function CreateAbsenceModal({ employee, employees, onClose, onSuccess }) {
               className={`tab ${activeTab === 'extended' ? 'active' : ''}`}
               onClick={() => setActiveTab('extended')}
             >
-              Længere periode
+              Periode
             </button>
           </div>
 
-          <form onSubmit={handleSubmit}>
+          <form onSubmit={handleSubmit} style={{ marginTop: '20px' }}>
             {activeTab === 'partial' && (
               <>
                 <div className="form-group">
@@ -143,6 +158,23 @@ function CreateAbsenceModal({ employee, employees, onClose, onSuccess }) {
                     onChange={(e) => setDate(e.target.value)}
                     required
                   />
+                </div>
+
+                <div className="form-group">
+                  <label>Arbejdstimer *</label>
+                  <input 
+                    type="number" 
+                    value={hoursWorked}
+                    onChange={(e) => setHoursWorked(e.target.value)}
+                    placeholder="Antal timer arbejdet"
+                    step="0.5"
+                    min="0"
+                    max="24"
+                    required
+                  />
+                  <small className="form-hint">
+                    Indtast hvor mange timer medarbejderen arbejdede denne dag
+                  </small>
                 </div>
 
                 <div className="form-group">
@@ -159,26 +191,12 @@ function CreateAbsenceModal({ employee, employees, onClose, onSuccess }) {
                 </div>
 
                 <div className="form-group">
-                  <label>Arbejdstimer (den dag) *</label>
-                  <input 
-                    type="number" 
-                    value={hoursWorked}
-                    onChange={(e) => setHoursWorked(e.target.value)}
-                    step="0.5"
-                    min="0"
-                    max="24"
-                    required
-                  />
-                  <span className="form-hint">Indtast hvor mange timer der blev arbejdet</span>
-                </div>
-
-                <div className="form-group">
                   <label>Kommentar (valgfri)</label>
                   <input 
                     type="text" 
                     value={comment}
                     onChange={(e) => setComment(e.target.value)}
-                    placeholder="f.eks. Gik hjem kl. 12"
+                    placeholder="f.eks. Lægebesøg"
                   />
                 </div>
               </>
@@ -207,6 +225,16 @@ function CreateAbsenceModal({ employee, employees, onClose, onSuccess }) {
                       <option key={reason} value={reason}>{reason}</option>
                     ))}
                   </select>
+                  {absenceReason === 'Søgnehelligdag' && !employee.internalHourlyRate && (
+                    <small className="form-hint" style={{ color: '#e74c3c' }}>
+                      ⚠️ Medarbejderen har ingen intern timepris - SH vil ikke blive beregnet automatisk
+                    </small>
+                  )}
+                  {absenceReason === 'Søgnehelligdag' && employee.internalHourlyRate && (
+                    <small className="form-hint" style={{ color: '#27ae60' }}>
+                      ✓ SH-akkumulering vil blive beregnet automatisk (14,7% af dagløn)
+                    </small>
+                  )}
                 </div>
 
                 <div className="form-group">

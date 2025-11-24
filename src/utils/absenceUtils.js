@@ -9,6 +9,12 @@ import {
   where
 } from 'firebase/firestore';
 import { db } from '../services/firebase';
+import { 
+  isSøgnehelligdag, 
+  calculateSHCompensation, 
+  getWeekdayFromDate 
+} from './søgnehelligdageUtils';
+import { addSHEntry, checkSHEntryExists } from './shAccumulationUtils';
 
 /**
  * FIRESTORE SCHEMA FOR ABSENCES
@@ -47,15 +53,91 @@ export function formatDate(date) {
 }
 
 /**
- * Create a new absence record
+ * Create SH accumulation entry when Søgnehelligdag absence is registered
  */
-export async function createAbsence(absenceData) {
+async function handleSHAccumulation(absenceData, employeeData) {
+  // Only process if it's a Søgnehelligdag and employee has internal rate
+  if (absenceData.absenceReason !== 'Søgnehelligdag') {
+    return { success: true, message: 'Not a SH absence' };
+  }
+
+  if (!employeeData.internalHourlyRate || employeeData.internalHourlyRate <= 0) {
+    console.warn('Employee has no internal hourly rate set - cannot calculate SH');
+    return { success: false, message: 'No internal hourly rate' };
+  }
+
+  try {
+    // Extract year from date
+    const [day, month, year] = absenceData.date.split('/');
+    const yearNum = parseInt(year);
+
+    // Check if entry already exists
+    const existsCheck = await checkSHEntryExists(
+      employeeData.id,
+      yearNum,
+      absenceData.date
+    );
+
+    if (existsCheck.success && existsCheck.exists) {
+      console.log('SH entry already exists for this date');
+      return { success: true, message: 'Entry already exists' };
+    }
+
+    // Get weekday and calculate compensation
+    const weekday = getWeekdayFromDate(absenceData.date);
+    const amount = calculateSHCompensation(employeeData.internalHourlyRate, weekday);
+
+    // Determine daily hours
+    const dailyHours = weekday === 'Fredag' ? 7 : 7.5;
+
+    // Get holiday name if it's a recognized holiday
+    const holiday = isSøgnehelligdag(absenceData.date);
+    const holidayName = holiday ? holiday.name : 'Søgnehelligdag';
+
+    // Create SH entry
+    const shResult = await addSHEntry(
+      employeeData.id,
+      employeeData.name,
+      yearNum,
+      {
+        date: absenceData.date,
+        holidayName: holidayName,
+        amount: amount,
+        hourlyRate: employeeData.internalHourlyRate,
+        dailyHours: dailyHours
+      }
+    );
+
+    if (shResult.success) {
+      console.log('SH accumulation entry created successfully');
+      return { success: true, message: 'SH entry created' };
+    } else {
+      console.error('Failed to create SH entry:', shResult.error);
+      return { success: false, message: 'Failed to create SH entry' };
+    }
+  } catch (error) {
+    console.error('Error in handleSHAccumulation:', error);
+    return { success: false, message: error.message };
+  }
+}
+
+/**
+ * Create a new absence record
+ * Automatically creates SH accumulation if absence is Søgnehelligdag
+ */
+export async function createAbsence(absenceData, employeeData) {
   try {
     const docRef = await addDoc(collection(db, 'absences'), {
       ...absenceData,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
     });
+
+    // Handle SH accumulation if applicable
+    if (employeeData) {
+      await handleSHAccumulation(absenceData, employeeData);
+    }
+
     return { success: true, id: docRef.id };
   } catch (error) {
     console.error('Error creating absence:', error);
@@ -68,8 +150,7 @@ export async function createAbsence(absenceData) {
  */
 export async function updateAbsence(absenceId, updateData) {
   try {
-    const absenceRef = doc(db, 'absences', absenceId);
-    await updateDoc(absenceRef, {
+    await updateDoc(doc(db, 'absences', absenceId), {
       ...updateData,
       updatedAt: new Date().toISOString()
     });
@@ -110,157 +191,108 @@ export async function getEmployeeAbsences(employeeId) {
       absences.push({ id: doc.id, ...doc.data() });
     });
     
-    return { success: true, absences };
-  } catch (error) {
-    console.error('Error fetching employee absences:', error);
-    return { success: false, error, absences: [] };
-  }
-}
-
-/**
- * Get absences for a specific month
- */
-export async function getAbsencesForMonth(employeeId, month, year) {
-  try {
-    const absencesResult = await getEmployeeAbsences(employeeId);
-    if (!absencesResult.success) {
-      return { success: false, absences: [] };
-    }
-    
-    const filtered = absencesResult.absences.filter(absence => {
-      const absenceDate = parseDate(absence.date);
-      return absenceDate.getMonth() === month && absenceDate.getFullYear() === year;
+    // Sort by date descending
+    absences.sort((a, b) => {
+      const dateA = parseDate(a.date);
+      const dateB = parseDate(b.date);
+      return dateB - dateA;
     });
     
-    return { success: true, absences: filtered };
+    return { success: true, absences };
   } catch (error) {
-    console.error('Error fetching absences for month:', error);
+    console.error('Error getting employee absences:', error);
     return { success: false, error, absences: [] };
   }
 }
 
 /**
- * Check if a specific date has an absence
- */
-export function findAbsenceForDate(absences, dateString) {
-  return absences.find(absence => {
-    const absenceDate = absence.date;
-    
-    // Check if it's a single day absence or within an extended absence range
-    if (absence.type === 'extended' && absence.endDate) {
-      const startDate = parseDate(absence.date);
-      const endDate = parseDate(absence.endDate);
-      const checkDate = parseDate(dateString);
-      
-      return checkDate >= startDate && checkDate <= endDate;
-    }
-    
-    // Single day or partial absence
-    return absenceDate === dateString;
-  });
-}
-
-/**
- * Get all dates affected by an extended absence
- */
-export function getExtendedAbsenceDates(startDate, endDate) {
-  const dates = [];
-  const current = parseDate(startDate);
-  const end = parseDate(endDate);
-  
-  while (current <= end) {
-    dates.push(formatDate(new Date(current)));
-    current.setDate(current.getDate() + 1);
-  }
-  
-  return dates;
-}
-
-/**
- * Create absence for all employees (lukkedag feature)
- */
-export async function createAbsenceForAllEmployees(employees, absenceData) {
-  try {
-    const promises = employees.map(employee => 
-      createAbsence({
-        ...absenceData,
-        employeeId: employee.id,
-        employeeName: employee.name
-      })
-    );
-    
-    await Promise.all(promises);
-    return { success: true };
-  } catch (error) {
-    console.error('Error creating absence for all employees:', error);
-    return { success: false, error };
-  }
-}
-
-/**
- * Get absences for date range (used in PDF generation)
+ * Get absences for a specific date range
  */
 export async function getAbsencesForDateRange(employeeId, startDate, endDate) {
   try {
-    const absencesResult = await getEmployeeAbsences(employeeId);
-    if (!absencesResult.success) {
-      return { success: false, absences: [] };
+    const result = await getEmployeeAbsences(employeeId);
+    
+    if (!result.success) {
+      return result;
     }
     
     const start = parseDate(startDate);
     const end = parseDate(endDate);
     
-    const filtered = absencesResult.absences.filter(absence => {
+    const filteredAbsences = result.absences.filter(absence => {
       const absenceDate = parseDate(absence.date);
       
-      // Check if absence falls within the range
+      // Handle extended absences
       if (absence.type === 'extended' && absence.endDate) {
-        const absenceEnd = parseDate(absence.endDate);
-        // Check if ranges overlap
-        return (absenceDate <= end) && (absenceEnd >= start);
+        const absenceEndDate = parseDate(absence.endDate);
+        // Check if date range overlaps with absence range
+        return (absenceDate <= end && absenceEndDate >= start);
       }
       
-      // Single day or partial absence
+      // Single day absence
       return absenceDate >= start && absenceDate <= end;
     });
     
-    return { success: true, absences: filtered };
+    return { success: true, absences: filteredAbsences };
   } catch (error) {
-    console.error('Error fetching absences for date range:', error);
+    console.error('Error getting absences for date range:', error);
     return { success: false, error, absences: [] };
   }
 }
 
 /**
- * Calculate work hours for a date considering absence
+ * Find absence for a specific date
+ */
+export function findAbsenceForDate(absences, dateString) {
+  return absences.find(absence => {
+    // Handle extended absences
+    if (absence.type === 'extended' && absence.endDate) {
+      const startDate = parseDate(absence.date);
+      const endDate = parseDate(absence.endDate);
+      const checkDate = parseDate(dateString);
+      return checkDate >= startDate && checkDate <= endDate;
+    }
+    
+    // Single day or partial absence
+    return absence.date === dateString;
+  });
+}
+
+/**
+ * Calculate work hours for a date considering absences
  */
 export function calculateWorkHours(dateString, weekday, absences) {
   const absence = findAbsenceForDate(absences, dateString);
   
-  if (!absence) {
-    // No absence - return standard hours
-    if (weekday === 'Fredag') {
-      return { worked: 7, minusLunch: 7 };
-    } else {
-      return { worked: 7.5, minusLunch: 7.5 };
-    }
-  }
+  // Standard hours based on weekday
+  const standardHours = weekday === 'Fredag' ? 7 : (weekday === 'Lørdag' || weekday === 'Søndag') ? 0 : 7.5;
+  const standardMinusLunch = weekday === 'Fredag' ? 7 : (weekday === 'Lørdag' || weekday === 'Søndag') ? 0 : 7.5;
   
-  // There is an absence
-  if (absence.type === 'partial') {
-    // Partial absence - use specified hours
+  if (!absence) {
     return { 
-      worked: absence.hoursWorked || 0, 
-      minusLunch: absence.hoursWorked || 0 
+      worked: standardHours,
+      minusLunch: standardMinusLunch
     };
   }
   
-  // Full day absence - no work hours
-  return { worked: 0, minusLunch: 0 };
+  // Partial absence
+  if (absence.type === 'partial') {
+    const hoursWorked = absence.hoursWorked || 0;
+    return {
+      worked: hoursWorked,
+      minusLunch: hoursWorked
+    };
+  }
+  
+  // Full day absence
+  return {
+    worked: 0,
+    minusLunch: 0
+  };
 }
 
 /**
- * Get absence comment for PDF with special formatting
+ * Get absence comment for PDF display
  */
 export function getAbsenceComment(dateString, weekday, absences) {
   const absence = findAbsenceForDate(absences, dateString);
@@ -269,39 +301,29 @@ export function getAbsenceComment(dateString, weekday, absences) {
     return '';
   }
   
-  // Calculate standard hours for the weekday
   const standardHours = weekday === 'Fredag' ? 7 : 7.5;
   
-  let comment = '';
-  
-  // Special formatting based on absence reason
   switch (absence.absenceReason) {
+    case 'Feriedag':
+      return `Feriedag: ${standardHours} timer`;
+    
     case 'Feriefridag':
-      comment = 'Feriefri (FF) 1500 Kr.';
-      break;
-      
-    case 'Søgnehelligdag':
-      comment = 'Søgnehelligdag (SH) 1500 Kr.';
-      break;
-      
+      return 'Feriefri (FF) 1500 Kr.';
+    
     case 'Barn sygedag':
-      comment = `Barn sygedag: ${standardHours.toString().replace('.', ',')} timer`;
-      break;
-      
+      return `Barns sygedag (BS): ${standardHours} timer`;
+    
     case 'Sygedag':
-      comment = `Sygedag: ${standardHours.toString().replace('.', ',')} timer`;
-      break;
-      
+      return `Sygedag: ${standardHours} timer`;
+    
+    case 'Søgnehelligdag':
+      // Calculate SH amount if possible
+      return 'Søgnehelligdag (SH)';
+    
+    case 'Andet':
+      return absence.comment || 'Fravær';
+    
     default:
-      // For other types (Feriedag, Andet) just use the reason
-      comment = absence.absenceReason;
-      break;
+      return absence.absenceReason;
   }
-  
-  // Add optional comment if exists (except for special formatted types)
-  if (absence.comment && !['Feriefridag', 'Søgnehelligdag', 'Barn sygedag', 'Sygedag'].includes(absence.absenceReason)) {
-    comment += ` - ${absence.comment}`;
-  }
-  
-  return comment;
 }

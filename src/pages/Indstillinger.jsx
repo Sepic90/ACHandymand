@@ -109,14 +109,16 @@ function Indstillinger() {
   const handleSaveEmployee = async (employeeData) => {
     try {
       if (editingEmployee) {
+        // Update existing employee - spread all data to include internalHourlyRate
         await updateDoc(doc(db, 'employees', editingEmployee.id), {
-          name: employeeData.name,
+          ...employeeData,
           updatedAt: new Date().toISOString()
         });
         showSuccess('Medarbejder opdateret!');
       } else {
+        // Create new employee - spread all data to include internalHourlyRate
         await addDoc(collection(db, 'employees'), { 
-          name: employeeData.name,
+          ...employeeData,
           createdAt: new Date().toISOString()
         });
         showSuccess('Medarbejder oprettet!');
@@ -148,69 +150,55 @@ function Indstillinger() {
         <h2 style={{ marginBottom: '20px', fontSize: '20px', color: '#2c3e50' }}>Standard Timepris</h2>
         
         {editingRate ? (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <input
-                type="number"
-                value={tempRate}
-                onChange={(e) => setTempRate(e.target.value)}
-                min="0"
-                step="50"
-                style={{
-                  padding: '10px',
-                  fontSize: '18px',
-                  width: '150px',
-                  border: '1px solid #ddd',
-                  borderRadius: '5px'
-                }}
-                autoFocus
-              />
-              <span style={{ color: '#7f8c8d' }}>kr/time</span>
-            </div>
-            <div style={{ display: 'flex', gap: '10px' }}>
-              <button 
-                className="btn-secondary"
-                onClick={() => {
-                  setTempRate(defaultRate);
-                  setEditingRate(false);
-                }}
-              >
-                Annuller
-              </button>
-              <button 
-                className="btn-primary"
-                onClick={saveDefaultRate}
-              >
-                Gem
-              </button>
-            </div>
+          <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+            <input
+              type="number"
+              value={tempRate}
+              onChange={(e) => setTempRate(e.target.value)}
+              style={{ 
+                padding: '8px 12px',
+                border: '1px solid #ddd',
+                borderRadius: '4px',
+                fontSize: '16px',
+                width: '150px'
+              }}
+              autoFocus
+            />
+            <button className="btn-primary" onClick={saveDefaultRate}>
+              Gem
+            </button>
+            <button 
+              className="btn-secondary" 
+              onClick={() => {
+                setEditingRate(false);
+                setTempRate(defaultRate);
+              }}
+            >
+              Annuller
+            </button>
           </div>
         ) : (
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <div>
-              <div style={{ fontSize: '32px', fontWeight: 'bold', color: '#27ae60', marginBottom: '5px' }}>
-                {defaultRate} kr
-              </div>
-              <div style={{ fontSize: '14px', color: '#7f8c8d' }}>
-                Standard timepris brugt for alle sager (kan tilpasses per sag)
-              </div>
-            </div>
-            <button 
-              className="btn-secondary"
-              onClick={() => setEditingRate(true)}
-            >
+          <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+            <span style={{ fontSize: '18px', fontWeight: '600', color: '#2c3e50' }}>
+              {defaultRate} kr./time
+            </span>
+            <button className="btn-secondary" onClick={() => setEditingRate(true)}>
               Redigér
             </button>
           </div>
         )}
+        
+        <p style={{ marginTop: '10px', color: '#7f8c8d', fontSize: '14px' }}>
+          Denne timepris bruges som standard når nye sager oprettes.
+        </p>
       </div>
 
       {/* Medarbejdere */}
       <div className="content-card">
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-          <h2 style={{ margin: 0, fontSize: '20px', color: '#2c3e50' }}>Medarbejdere</h2>
+          <h2 style={{ fontSize: '20px', color: '#2c3e50', margin: 0 }}>Medarbejdere</h2>
           <button className="btn-primary" onClick={handleAddEmployee}>
-            + Tilføj Medarbejder
+            + Tilføj medarbejder
           </button>
         </div>
 
@@ -225,6 +213,7 @@ function Indstillinger() {
             <thead>
               <tr style={{ borderBottom: '2px solid #ecf0f1' }}>
                 <th style={{ textAlign: 'left', padding: '12px', color: '#2c3e50', fontWeight: '600' }}>Navn</th>
+                <th style={{ textAlign: 'left', padding: '12px', color: '#2c3e50', fontWeight: '600' }}>Intern timepris</th>
                 <th style={{ textAlign: 'right', padding: '12px', color: '#2c3e50', fontWeight: '600' }}>Handlinger</th>
               </tr>
             </thead>
@@ -233,6 +222,17 @@ function Indstillinger() {
                 <tr key={employee.id} style={{ borderBottom: '1px solid #ecf0f1' }}>
                   <td style={{ padding: '15px' }}>
                     <strong style={{ fontSize: '15px', color: '#2c3e50' }}>{employee.name}</strong>
+                  </td>
+                  <td style={{ padding: '15px', color: '#7f8c8d' }}>
+                    {employee.internalHourlyRate ? (
+                      <span style={{ color: '#27ae60', fontWeight: '500' }}>
+                        {employee.internalHourlyRate} kr./time
+                      </span>
+                    ) : (
+                      <span style={{ color: '#95a5a6', fontStyle: 'italic' }}>
+                        Ikke angivet
+                      </span>
+                    )}
                   </td>
                   <td style={{ padding: '15px', textAlign: 'right' }}>
                     <button
