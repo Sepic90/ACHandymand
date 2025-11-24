@@ -2,6 +2,7 @@ import jsPDF from 'jspdf';
 import { generateDateRange, getMonthPairLabel, getYearLabel } from './dateUtils';
 import { getAbsencesForDateRange, findAbsenceForDate, calculateWorkHours, getAbsenceComment } from './absenceUtils';
 import { getOvertimeForDateRange, getOvertimeHours } from './overtimeUtils';
+import { getTimesheetCommentsForDateRange } from './commentUtils';
 
 /**
  * Generate timesheet PDF for one or more employees
@@ -49,16 +50,35 @@ export async function generateTimesheetPDF(year, startMonthIndex, employeeNames,
       pdf.addPage();
     }
     
-    console.log(`\n--- Loading absences for ${employee.name} (ID: ${employee.id}) ---`);
+    console.log(`\n--- Loading data for ${employee.name} (ID: ${employee.id}) ---`);
+    
+    // Load absences
     const absencesResult = await getAbsencesForDateRange(employee.id, firstDate, lastDate);
     const absences = absencesResult.success ? absencesResult.absences : [];
-    
     console.log(`Found ${absences.length} absence(s) for ${employee.name}`);
-    if (absences.length > 0) {
-      console.log('Absences:', absences.map(a => `${a.date} (${a.absenceReason})`).join(', '));
-    }
     
-    await generateEmployeePage(pdf, year, startMonthIndex, dates, employee.name, employee.id, logoData, absences, firstDate, lastDate);
+    // Load overtime
+    const overtimeResult = await getOvertimeForDateRange(employee.id, firstDate, lastDate);
+    const overtime = overtimeResult.success ? overtimeResult.overtime : [];
+    console.log(`Found ${overtime.length} overtime entries for ${employee.name}`);
+    
+    // Load timesheet comments
+    const commentsResult = await getTimesheetCommentsForDateRange(employee.id, firstDate, lastDate);
+    const comments = commentsResult.success ? commentsResult.comments : [];
+    console.log(`Found ${comments.length} manual comment(s) for ${employee.name}`);
+    
+    await generateEmployeePage(
+      pdf, 
+      year, 
+      startMonthIndex, 
+      dates, 
+      employee.name, 
+      employee.id, 
+      logoData, 
+      absences, 
+      overtime,
+      comments
+    );
   }
   
   const monthPairLabel = getMonthPairLabel(startMonthIndex);
@@ -73,16 +93,10 @@ export async function generateTimesheetPDF(year, startMonthIndex, employeeNames,
 /**
  * Generate a single page for an employee
  */
-async function generateEmployeePage(pdf, year, startMonthIndex, dates, employeeName, employeeId, logoData, absences, firstDate, lastDate) {
+async function generateEmployeePage(pdf, year, startMonthIndex, dates, employeeName, employeeId, logoData, absences, overtime, comments) {
   const pageWidth = pdf.internal.pageSize.getWidth();
   const pageHeight = pdf.internal.pageSize.getHeight();
   const margin = 15;
-  
-  // Load overtime data
-  console.log(`Loading overtime for ${employeeName} (ID: ${employeeId})`);
-  const overtimeResult = await getOvertimeForDateRange(employeeId, firstDate, lastDate);
-  const overtime = overtimeResult.success ? overtimeResult.overtime : [];
-  console.log(`Found ${overtime.length} overtime entries for ${employeeName}`);
   
   let yPosition = margin;
   
@@ -134,7 +148,7 @@ async function generateEmployeePage(pdf, year, startMonthIndex, dates, employeeN
   
   yPosition += 8;
   
-  drawTable(pdf, margin, yPosition, pageWidth - 2 * margin, dates, absences, overtime);
+  drawTable(pdf, margin, yPosition, pageWidth - 2 * margin, dates, absences, overtime, comments);
   
   const signatureY = pageHeight - 25;
   const signatureWidth = pageWidth / 3;
@@ -153,9 +167,23 @@ async function generateEmployeePage(pdf, year, startMonthIndex, dates, employeeN
 }
 
 /**
+ * Get comment for a specific date with priority: Manual comments > Absence comments
+ */
+function getCommentForDate(dateString, weekday, absences, comments) {
+  // First, check for manual comment (highest priority)
+  const manualComment = comments.find(c => c.date === dateString);
+  if (manualComment) {
+    return manualComment.comment;
+  }
+  
+  // Fall back to automatic absence comment
+  return getAbsenceComment(dateString, weekday, absences);
+}
+
+/**
  * Draw the timesheet table
  */
-function drawTable(pdf, x, y, width, dates, absences, overtime) {
+function drawTable(pdf, x, y, width, dates, absences, overtime, comments) {
   const startY = y;
   
   const columns = [
@@ -201,6 +229,7 @@ function drawTable(pdf, x, y, width, dates, absences, overtime) {
   let totalWorkHours = 0;
   let totalOvertimeHours = 0;
   let absenceMatchCount = 0;
+  let manualCommentCount = 0;
   
   pdf.setFont('helvetica', 'normal');
   pdf.setFontSize(8);
@@ -210,12 +239,19 @@ function drawTable(pdf, x, y, width, dates, absences, overtime) {
     
     const absence = findAbsenceForDate(absences, dateInfo.formattedDate);
     const workHours = calculateWorkHours(dateInfo.formattedDate, dateInfo.weekday, absences);
-    const absenceComment = getAbsenceComment(dateInfo.formattedDate, dateInfo.weekday, absences);
+    
+    // Use getCommentForDate which prioritizes manual comments over absence comments
+    const commentText = getCommentForDate(dateInfo.formattedDate, dateInfo.weekday, absences, comments);
     const overtimeHours = getOvertimeHours(dateInfo.formattedDate, overtime);
     
+    // Track statistics
     if (absence) {
       absenceMatchCount++;
-      console.log(`✓ Absence matched on ${dateInfo.formattedDate}: ${absence.absenceReason}`);
+    }
+    const hasManualComment = comments.find(c => c.date === dateInfo.formattedDate);
+    if (hasManualComment) {
+      manualCommentCount++;
+      console.log(`✓ Manual comment on ${dateInfo.formattedDate}: "${hasManualComment.comment}"`);
     }
     
     if (!dateInfo.isWeekend) {
@@ -265,7 +301,8 @@ function drawTable(pdf, x, y, width, dates, absences, overtime) {
           cellText = '0';
         }
       } else if (colIndex === 5) {
-        cellText = absenceComment;
+        // Use the prioritized comment (manual > absence)
+        cellText = commentText;
       } else if (colIndex === 6 && !dateInfo.isWeekend) {
         const hours = workHours.worked;
         if (hours > 0) {
@@ -304,6 +341,7 @@ function drawTable(pdf, x, y, width, dates, absences, overtime) {
   });
   
   console.log(`Total absence matches in PDF table: ${absenceMatchCount}`);
+  console.log(`Total manual comments in PDF table: ${manualCommentCount}`);
   console.log(`Total overtime hours: ${totalOvertimeHours}`);
   
   // Fixed total row

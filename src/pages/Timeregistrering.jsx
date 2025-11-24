@@ -4,6 +4,7 @@ import { db } from '../services/firebase';
 import { generateMonthPairs } from '../utils/dateUtils';
 import { generateTimesheetPDF } from '../utils/pdfGenerator';
 import { useNotification } from '../utils/notificationUtils';
+import { autoPopulateSH } from '../utils/shAutoPopulationUtils';
 import CreateAbsenceModal from '../components/CreateAbsenceModal';
 import ViewAbsenceModal from '../components/ViewAbsenceModal';
 import CreateOvertimeModal from '../components/CreateOvertimeModal';
@@ -36,6 +37,13 @@ function Timeregistrering() {
     loadEmployees();
   }, []);
 
+  // Auto-populate SH when employees are loaded
+  useEffect(() => {
+    if (employees.length > 0) {
+      triggerSHAutoPopulation();
+    }
+  }, [employees]);
+
   const loadEmployees = async () => {
     setLoading(true);
     try {
@@ -56,6 +64,17 @@ function Timeregistrering() {
       showError('Fejl ved indlæsning af medarbejdere.');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const triggerSHAutoPopulation = async () => {
+    try {
+      console.log('🔄 Triggering automatic SH population...');
+      await autoPopulateSH(employees);
+      console.log('✅ SH auto-population check complete');
+    } catch (error) {
+      console.error('❌ Error in SH auto-population:', error);
+      // Don't show error to user - this runs in background
     }
   };
 
@@ -167,34 +186,30 @@ function Timeregistrering() {
             </div>
 
             {loading ? (
-              <p>Indlæser medarbejdere...</p>
-            ) : (
-              <select
-                value={selectedEmployee}
-                onChange={(e) => setSelectedEmployee(e.target.value)}
-                disabled={allEmployees || employees.length === 0}
-              >
-                {employees.length === 0 ? (
-                  <option value="">Ingen medarbejdere</option>
-                ) : (
-                  employees.map(emp => (
-                    <option key={emp.id} value={emp.name}>{emp.name}</option>
-                  ))
-                )}
-              </select>
-            )}
-
-            {employees.length === 0 && (
+              <p>Indlæser...</p>
+            ) : employees.length === 0 ? (
               <p className="no-employees-text">
-                Tilføj medarbejdere i Indstillinger først
+                Ingen ansatte tilgængelige. Tilføj medarbejdere i Indstillinger.
               </p>
-            )}
+            ) : !allEmployees ? (
+              <select 
+                value={selectedEmployee} 
+                onChange={(e) => setSelectedEmployee(e.target.value)}
+              >
+                {employees.map(emp => (
+                  <option key={emp.id} value={emp.name}>
+                    {emp.name}
+                  </option>
+                ))}
+              </select>
+            ) : null}
           </div>
 
           <button 
-            className="btn-generate"
+            className="btn-primary"
             onClick={handleGeneratePDF}
-            disabled={generating || employees.length === 0}
+            disabled={generating || loading || employees.length === 0}
+            style={{ marginTop: '20px' }}
           >
             {generating ? 'Genererer...' : 'Generér PDF'}
           </button>

@@ -13,7 +13,7 @@ import {
   isSøgnehelligdag, 
   calculateSHCompensation, 
   getWeekdayFromDate 
-} from './søgnehelligdageUtils';
+} from './shHolidayUtils';
 import { addSHEntry, checkSHEntryExists } from './shAccumulationUtils';
 
 /**
@@ -293,6 +293,10 @@ export function calculateWorkHours(dateString, weekday, absences) {
 
 /**
  * Get absence comment for PDF display
+ * 
+ * IMPORTANT: Manual timesheet comments (from commentUtils) take PRIORITY
+ * over this function's output. PDF generator should check for manual
+ * comments FIRST before calling this function.
  */
 export function getAbsenceComment(dateString, weekday, absences) {
   const absence = findAbsenceForDate(absences, dateString);
@@ -317,7 +321,6 @@ export function getAbsenceComment(dateString, weekday, absences) {
       return `Sygedag: ${standardHours} timer`;
     
     case 'Søgnehelligdag':
-      // Calculate SH amount if possible
       return 'Søgnehelligdag (SH)';
     
     case 'Andet':
