@@ -5,10 +5,7 @@ import { generateMonthPairs } from '../utils/dateUtils';
 import { generateTimesheetPDF } from '../utils/pdfGenerator';
 import { useNotification } from '../utils/notificationUtils';
 import { autoPopulateSH } from '../utils/shAutoPopulationUtils';
-import CreateAbsenceModal from '../components/CreateAbsenceModal';
-import ViewAbsenceModal from '../components/ViewAbsenceModal';
-import CreateOvertimeModal from '../components/CreateOvertimeModal';
-import ViewOvertimeModal from '../components/ViewOvertimeModal';
+import EmployeeAdminModal from '../components/EmployeeAdminModal';
 
 function Timeregistrering() {
   const { showError, showWarning } = useNotification();
@@ -20,15 +17,9 @@ function Timeregistrering() {
   const [loading, setLoading] = useState(false);
   const [generating, setGenerating] = useState(false);
 
-  // Absence modals
-  const [showCreateAbsence, setShowCreateAbsence] = useState(false);
-  const [showViewAbsence, setShowViewAbsence] = useState(false);
-  const [selectedEmployeeForAbsence, setSelectedEmployeeForAbsence] = useState(null);
-
-  // Overtime modals
-  const [showCreateOvertime, setShowCreateOvertime] = useState(false);
-  const [showViewOvertime, setShowViewOvertime] = useState(false);
-  const [selectedEmployeeForOvertime, setSelectedEmployeeForOvertime] = useState(null);
+  // Admin modal state
+  const [showAdminModal, setShowAdminModal] = useState(false);
+  const [selectedEmployeeForAdmin, setSelectedEmployeeForAdmin] = useState(null);
 
   const monthPairs = generateMonthPairs();
   const years = Array.from({ length: 10 }, (_, i) => new Date().getFullYear() - 2 + i);
@@ -100,39 +91,21 @@ function Timeregistrering() {
     }
   };
 
-  const handleCreateAbsence = (employee) => {
-    setSelectedEmployeeForAbsence(employee);
-    setShowCreateAbsence(true);
+  const handleOpenAdmin = (employee) => {
+    setSelectedEmployeeForAdmin(employee);
+    setShowAdminModal(true);
   };
 
-  const handleViewAbsence = (employee) => {
-    setSelectedEmployeeForAbsence(employee);
-    setShowViewAbsence(true);
-  };
-
-  const handleAbsenceSuccess = () => {
-    // Refresh is handled in the modals
-  };
-
-  const handleCreateOvertime = (employee) => {
-    setSelectedEmployeeForOvertime(employee);
-    setShowCreateOvertime(true);
-  };
-
-  const handleViewOvertime = (employee) => {
-    setSelectedEmployeeForOvertime(employee);
-    setShowViewOvertime(true);
-  };
-
-  const handleOvertimeSuccess = () => {
-    // Refresh is handled in the modals
+  const handleCloseAdmin = () => {
+    setShowAdminModal(false);
+    setSelectedEmployeeForAdmin(null);
   };
 
   return (
     <div>
       <div className="page-header">
-        <h1>Timeregistrering</h1>
-        <p>Generér timeregistreringsformularer for medarbejdere</p>
+        <h1>Medarbejderadministration</h1>
+        <p>Administrer medarbejdere, fravær, overarbejde og generér timesedler</p>
         <img 
           src="/worker.png" 
           alt="" 
@@ -217,7 +190,7 @@ function Timeregistrering() {
       </div>
 
       <div className="content-card" style={{ marginTop: '30px' }}>
-        <h3 style={{ marginBottom: '20px' }}>Timer og fravær</h3>
+        <h3 style={{ marginBottom: '20px' }}>Medarbejdere</h3>
         
         {loading ? (
           <p>Indlæser medarbejdere...</p>
@@ -226,72 +199,33 @@ function Timeregistrering() {
             Tilføj medarbejdere i Indstillinger først
           </p>
         ) : (
-          <div className="absence-employee-list">
+          <div className="employee-admin-list">
             {employees.map(employee => (
-              <div key={employee.id} className="absence-employee-row">
-                <span className="absence-employee-name">{employee.name}</span>
-                <div className="absence-employee-actions">
-                  <button 
-                    className="btn-primary btn-small"
-                    onClick={() => handleCreateAbsence(employee)}
-                  >
-                    Opret fravær
-                  </button>
-                  <button 
-                    className="btn-secondary btn-small"
-                    onClick={() => handleViewAbsence(employee)}
-                  >
-                    Se / rediger fravær
-                  </button>
-                  <button 
-                    className="btn-primary btn-small"
-                    onClick={() => handleCreateOvertime(employee)}
-                  >
-                    Registrer overarbejde
-                  </button>
-                  <button 
-                    className="btn-secondary btn-small"
-                    onClick={() => handleViewOvertime(employee)}
-                  >
-                    Se / rediger overarbejde
-                  </button>
+              <div key={employee.id} className="employee-admin-row">
+                <div className="employee-info">
+                  <span className="employee-admin-name">{employee.name}</span>
+                  <span className="employee-admin-role">{employee.role || 'Medarbejder'}</span>
                 </div>
+                <button 
+                  className="btn-admin"
+                  onClick={() => handleOpenAdmin(employee)}
+                >
+                  <span className="btn-admin-icon">⚙️</span>
+                  <span>Administrér</span>
+                </button>
               </div>
             ))}
           </div>
         )}
       </div>
 
-      {showCreateAbsence && selectedEmployeeForAbsence && (
-        <CreateAbsenceModal
-          employee={selectedEmployeeForAbsence}
+      {/* Employee Admin Modal */}
+      {showAdminModal && selectedEmployeeForAdmin && (
+        <EmployeeAdminModal
+          employee={selectedEmployeeForAdmin}
           employees={employees}
-          onClose={() => setShowCreateAbsence(false)}
-          onSuccess={handleAbsenceSuccess}
-        />
-      )}
-
-      {showViewAbsence && selectedEmployeeForAbsence && (
-        <ViewAbsenceModal
-          employee={selectedEmployeeForAbsence}
-          onClose={() => setShowViewAbsence(false)}
-          onSuccess={handleAbsenceSuccess}
-        />
-      )}
-
-      {showCreateOvertime && selectedEmployeeForOvertime && (
-        <CreateOvertimeModal
-          employee={selectedEmployeeForOvertime}
-          onClose={() => setShowCreateOvertime(false)}
-          onSuccess={handleOvertimeSuccess}
-        />
-      )}
-
-      {showViewOvertime && selectedEmployeeForOvertime && (
-        <ViewOvertimeModal
-          employee={selectedEmployeeForOvertime}
-          onClose={() => setShowViewOvertime(false)}
-          onSuccess={handleOvertimeSuccess}
+          isOpen={showAdminModal}
+          onClose={handleCloseAdmin}
         />
       )}
     </div>

@@ -4,7 +4,7 @@ import {
   isSøgnehelligdag, 
   calculateSHCompensation, 
   getWeekdayFromDate 
-} from '../utils/søgnehelligdageUtils';
+} from '../utils/shHolidayUtils';
 import { useNotification } from '../utils/notificationUtils';
 
 function AddManualSHEntryModal({ isOpen, onClose, employee, year, onSuccess }) {

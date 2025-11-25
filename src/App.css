@@ -6412,3 +6412,617 @@ body {
 /* ============================================
    END OF EVENT DETAILS MODAL
    ============================================ */
+   
+   /* ============================================
+   EMPLOYEE ADMIN MODAL - PHASE 4 STYLES
+   Add these styles to the END of your App.css file
+   ============================================ */
+
+/* Admin Modal - Extra Large */
+.employee-admin-modal {
+  max-width: 900px;
+  width: 95%;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.admin-modal-body {
+  flex: 1;
+  overflow-y: auto;
+  min-height: 400px;
+}
+
+/* Admin Tabs */
+.admin-tabs {
+  display: flex;
+  gap: 0;
+  border-bottom: 2px solid #e1e8ed;
+  padding: 0 24px;
+  background: #f8f9fa;
+}
+
+.admin-tab {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 16px 20px;
+  background: transparent;
+  border: none;
+  border-bottom: 3px solid transparent;
+  font-size: 14px;
+  font-weight: 600;
+  color: #7f8c8d;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.admin-tab:hover {
+  color: #2c3e50;
+  background: rgba(255, 255, 255, 0.5);
+}
+
+.admin-tab.active {
+  color: #3498db;
+  border-bottom-color: #3498db;
+  background: white;
+}
+
+.admin-tab .tab-icon {
+  font-size: 16px;
+}
+
+.admin-tab .tab-label {
+  display: inline;
+}
+
+/* Admin Tab Content */
+.admin-tab-content {
+  padding: 24px;
+  animation: fadeIn 0.2s ease-in;
+}
+
+/* Stats Overview (Oversigt Tab) */
+.stats-overview {
+  max-width: 100%;
+}
+
+.loading-stats {
+  text-align: center;
+  padding: 40px;
+  color: #7f8c8d;
+}
+
+.stats-cards {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+  margin-bottom: 32px;
+}
+
+.stat-card {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 20px;
+  background: #f8f9fa;
+  border: 2px solid #e1e8ed;
+  border-radius: 12px;
+  transition: all 0.2s;
+}
+
+.stat-card.clickable {
+  cursor: pointer;
+}
+
+.stat-card.clickable:hover {
+  background: #ebf5fb;
+  border-color: #3498db;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(52, 152, 219, 0.15);
+}
+
+.stat-icon {
+  font-size: 32px;
+  width: 56px;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.stat-content {
+  flex: 1;
+}
+
+.stat-value {
+  font-size: 24px;
+  font-weight: 700;
+  color: #2c3e50;
+  line-height: 1.2;
+}
+
+.stat-label {
+  font-size: 13px;
+  color: #7f8c8d;
+  margin-top: 4px;
+}
+
+.stat-arrow {
+  font-size: 20px;
+  color: #bdc3c7;
+  transition: all 0.2s;
+}
+
+.stat-card.clickable:hover .stat-arrow {
+  color: #3498db;
+  transform: translateX(4px);
+}
+
+/* Employee Info Summary */
+.employee-info-summary {
+  background: #f8f9fa;
+  border: 1px solid #e1e8ed;
+  border-radius: 12px;
+  padding: 20px;
+}
+
+.employee-info-summary h4 {
+  margin: 0 0 16px 0;
+  font-size: 16px;
+  color: #2c3e50;
+  font-weight: 600;
+}
+
+.info-grid-compact {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+
+.info-item-compact {
+  display: flex;
+  gap: 8px;
+  font-size: 14px;
+}
+
+.info-item-compact .info-label {
+  color: #7f8c8d;
+  font-weight: 500;
+  min-width: 100px;
+}
+
+.info-item-compact .info-value {
+  color: #2c3e50;
+  font-weight: 600;
+}
+
+/* Tab Header Row */
+.tab-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 24px;
+  gap: 16px;
+}
+
+.tab-header-row h3 {
+  margin: 0 0 6px 0;
+  font-size: 20px;
+  color: #2c3e50;
+}
+
+.tab-description {
+  margin: 0;
+  font-size: 14px;
+  color: #7f8c8d;
+}
+
+/* Action Buttons Grid */
+.action-buttons-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.action-card {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 20px;
+  background: white;
+  border: 2px solid #e1e8ed;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-align: left;
+}
+
+.action-card:hover {
+  border-color: #3498db;
+  background: #ebf5fb;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(52, 152, 219, 0.15);
+}
+
+.action-icon {
+  font-size: 28px;
+  width: 56px;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f8f9fa;
+  border-radius: 12px;
+}
+
+.action-card:hover .action-icon {
+  background: white;
+}
+
+.action-content {
+  flex: 1;
+}
+
+.action-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: #2c3e50;
+  margin-bottom: 4px;
+}
+
+.action-description {
+  font-size: 13px;
+  color: #7f8c8d;
+}
+
+/* Quick Stats */
+.quick-stats {
+  display: flex;
+  gap: 24px;
+  padding: 16px 20px;
+  background: #f8f9fa;
+  border-radius: 8px;
+}
+
+.quick-stat {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.quick-stat-value {
+  font-size: 24px;
+  font-weight: 700;
+  color: #3498db;
+}
+
+.quick-stat-label {
+  font-size: 14px;
+  color: #7f8c8d;
+}
+
+/* SH Summary Card */
+.sh-summary-card {
+  background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%);
+  border-radius: 16px;
+  padding: 24px;
+  color: white;
+}
+
+.sh-summary-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.sh-year {
+  font-size: 18px;
+  font-weight: 600;
+  opacity: 0.9;
+}
+
+.sh-amount {
+  font-size: 32px;
+  font-weight: 700;
+}
+
+.sh-summary-info {
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 12px;
+  padding: 16px;
+}
+
+.sh-summary-info p {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.6;
+  opacity: 0.95;
+}
+
+.sh-warning {
+  margin-top: 12px;
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.sh-summary-card .btn-primary {
+  background: white;
+  color: #27ae60;
+}
+
+.sh-summary-card .btn-primary:hover {
+  background: #f8f9fa;
+  transform: translateY(-1px);
+}
+
+/* Comments List (Bemærkninger Tab) */
+.loading-comments {
+  text-align: center;
+  padding: 40px;
+  color: #7f8c8d;
+}
+
+.empty-comments {
+  text-align: center;
+  padding: 48px 24px;
+  background: #f8f9fa;
+  border-radius: 12px;
+}
+
+.empty-comments .empty-icon {
+  font-size: 48px;
+  margin-bottom: 16px;
+}
+
+.empty-comments h4 {
+  margin: 0 0 8px 0;
+  color: #2c3e50;
+  font-size: 18px;
+}
+
+.empty-comments p {
+  margin: 0 0 20px 0;
+  color: #7f8c8d;
+  font-size: 14px;
+  max-width: 400px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.comments-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.comment-item {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px;
+  background: #f8f9fa;
+  border: 1px solid #e1e8ed;
+  border-radius: 10px;
+  transition: all 0.2s;
+}
+
+.comment-item:hover {
+  background: #ffffff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.comment-date {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 110px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #2c3e50;
+}
+
+.date-icon {
+  font-size: 16px;
+}
+
+.comment-text {
+  flex: 1;
+  font-size: 14px;
+  color: #2c3e50;
+  background: white;
+  padding: 10px 14px;
+  border-radius: 8px;
+  border: 1px solid #e1e8ed;
+}
+
+.comment-actions {
+  display: flex;
+  gap: 8px;
+}
+
+/* Employee Admin List (Main Page) */
+.employee-admin-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.employee-admin-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+  background: #f8f9fa;
+  border-radius: 10px;
+  border: 1px solid #e1e8ed;
+  transition: all 0.2s;
+}
+
+.employee-admin-row:hover {
+  background: #ffffff;
+  border-color: #bdc3c7;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.employee-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.employee-admin-name {
+  font-size: 16px;
+  font-weight: 600;
+  color: #2c3e50;
+}
+
+.employee-admin-role {
+  font-size: 13px;
+  color: #7f8c8d;
+}
+
+/* Administrér Button */
+.btn-admin {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-admin:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(52, 152, 219, 0.4);
+}
+
+.btn-admin-icon {
+  font-size: 16px;
+}
+
+/* Small Danger Button */
+.btn-danger {
+  background: #e74c3c;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-danger:hover {
+  background: #c0392b;
+}
+
+/* Responsive Design for Admin Modal */
+@media (max-width: 768px) {
+  .employee-admin-modal {
+    max-width: 100%;
+    width: 100%;
+    max-height: 100vh;
+    border-radius: 0;
+  }
+
+  .admin-tabs {
+    overflow-x: auto;
+    padding: 0 16px;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .admin-tab {
+    padding: 12px 14px;
+    font-size: 13px;
+  }
+
+  .admin-tab .tab-label {
+    display: none;
+  }
+
+  .admin-tab .tab-icon {
+    font-size: 20px;
+  }
+
+  .admin-tab-content {
+    padding: 16px;
+  }
+
+  .stats-cards {
+    grid-template-columns: 1fr;
+  }
+
+  .action-buttons-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .info-grid-compact {
+    grid-template-columns: 1fr;
+  }
+
+  .tab-header-row {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .tab-header-row .btn-primary {
+    width: 100%;
+  }
+
+  .comment-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .comment-date {
+    width: 100%;
+  }
+
+  .comment-text {
+    width: 100%;
+  }
+
+  .comment-actions {
+    width: 100%;
+    justify-content: flex-end;
+  }
+
+  .employee-admin-row {
+    flex-direction: column;
+    gap: 12px;
+    align-items: flex-start;
+  }
+
+  .btn-admin {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .sh-summary-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+}
+
+/* ============================================
+   END OF EMPLOYEE ADMIN MODAL STYLES
+   ============================================ */
